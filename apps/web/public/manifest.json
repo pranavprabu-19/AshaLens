@@ -1,0 +1,12 @@
+{
+  "name": "AshaLens",
+  "short_name": "AshaLens",
+  "description": "Rural paper-to-safety companion",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4EFE4",
+  "theme_color": "#0A4A45",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

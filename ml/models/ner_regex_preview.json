@@ -1,0 +1,27 @@
+[
+  {
+    "drug": "Ferrous sulphate",
+    "dose": "200 mg",
+    "raw": "Rx Ferrous sulphate 200 mg once daily"
+  },
+  {
+    "drug": "Metformin",
+    "dose": "500 mg",
+    "raw": "Tab Metformin 500 mg BD"
+  },
+  {
+    "drug": "Amlodipine",
+    "dose": "5mg",
+    "raw": "Amlodipine 5mg HS"
+  },
+  {
+    "drug": "Paracetamol",
+    "dose": "250 ml",
+    "raw": "Syp Paracetamol 250 ml"
+  },
+  {
+    "drug": null,
+    "dose": null,
+    "raw": "Unknown herb powder morning"
+  }
+]

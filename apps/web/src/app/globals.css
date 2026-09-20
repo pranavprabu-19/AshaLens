@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: #f4efe4;
+  color: #12221f;
+}
+
+.paper-grid {
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(14, 107, 99, 0.08), transparent 28%),
+    radial-gradient(circle at 88% 0%, rgba(181, 71, 8, 0.08), transparent 24%),
+    linear-gradient(180deg, #fbf8f1 0%, #f4efe4 100%);
+}

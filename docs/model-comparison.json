@@ -1,0 +1,6 @@
+{
+  "n": 100,
+  "regex_drug_recall_proxy": 0.7741935483870968,
+  "note": "Compare regex vs trained LogReg NER vs DistilBERT-tiny in the college report. LogReg/Distil metrics print during train_ner.py.",
+  "llm": "Optional Gemini/Groq is explanation-only and is not scored as an extractor."
+}
