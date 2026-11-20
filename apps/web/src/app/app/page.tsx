@@ -23,6 +23,20 @@ export default function HomePage() {
         </p>
       </section>
 
+      <section className="rounded-3xl border border-sand bg-white p-4 shadow-card">
+        <p className="text-xs font-semibold uppercase text-teal">Patient Helpline</p>
+        <p className="mt-2 font-display text-2xl text-teal-dark">
+          {process.env.NEXT_PUBLIC_HELPLINE_NUMBER || "Demo number not set"}
+        </p>
+        <p className="mt-2 text-sm text-ink/70">
+          Call from the phone on the clinic list, then enter the 4-digit family PIN. 1 medicines, 2 alerts, 3
+          labs, 4 pregnancy, 5 next visit, 9 ASHA callback. In an emergency, hang up and dial 108.
+        </p>
+        <Link href="/app/dialpad" className="mt-3 inline-block text-sm font-semibold text-teal">
+          Test live dial pad
+        </Link>
+      </section>
+
       <div className="grid grid-cols-2 gap-3">
         <Link href="/app/week" className="rounded-3xl bg-white p-4 shadow-card">
           <p className="text-xs font-semibold uppercase text-warn">This week</p>

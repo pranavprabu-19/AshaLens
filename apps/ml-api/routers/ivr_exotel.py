@@ -7,7 +7,7 @@ import os
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, PlainTextResponse
 
-from services.dialpad_core import CALLS, check_pin, find_patient, insight_text, log_access
+from services.dialpad_core import CALLS, check_pin, find_patient, insight_text, log_access, wav_url
 from services.tts_sarvam import synthesize
 
 router = APIRouter(prefix="/ivr/exotel", tags=["ivr-exotel"])
@@ -20,10 +20,6 @@ def _check_token(request: Request) -> None:
     sent = request.headers.get("x-exotel-token") or request.query_params.get("token") or ""
     if sent != expected:
         raise HTTPException(status_code=403, detail="Webhook token did not match")
-
-
-def _base() -> str:
-    return os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
 def _call(call_sid: str, phone: str) -> dict:
@@ -39,11 +35,6 @@ def _call(call_sid: str, phone: str) -> dict:
         }
         CALLS[call_sid] = state
     return state
-
-
-def _wav_url(text: str, lang: str) -> str:
-    path = synthesize(text, lang, codec="wav", sample_rate=8000)
-    return f"{_base()}/dialpad/audio/{path.name}"
 
 
 def _prompt(state: dict, digits: str) -> str:
@@ -88,7 +79,7 @@ async def entry(request: Request, CallSid: str = "", From: str = "", format: str
     state = _call(call_sid, phone)
     text = _prompt(state, "")
     if format == "json":
-        return {"play": _wav_url(text, state["lang"]), "gather_timeout_seconds": 10, "retries": 2}
+        return {"play": wav_url(text, state["lang"]), "gather_timeout_seconds": 10, "retries": 2}
     path = synthesize(text, state["lang"], codec="wav", sample_rate=8000)
     return FileResponse(path, media_type="audio/wav")
 
@@ -102,7 +93,7 @@ async def passthru(request: Request):
     digits = str(form.get("digits") or request.query_params.get("digits") or "")
     state = _call(call_sid or f"anon-{phone}", phone)
     text = _prompt(state, (digits or "").strip())
-    return PlainTextResponse(_wav_url(text, state["lang"]))
+    return PlainTextResponse(wav_url(text, state["lang"]))
 
 
 @router.api_route("/status", methods=["GET", "POST"])

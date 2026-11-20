@@ -206,6 +206,18 @@ def insight_text(patient: Patient, menu: str, lang: str) -> str:
     return f"{title} {body} {tail}"
 
 
+def public_base() -> str:
+    return os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+
+
+def wav_url(text: str, lang: str) -> str:
+    """Cached 8000 Hz WAV for a phone prompt. Raises if speech synthesis is unavailable."""
+    from services.tts_sarvam import synthesize
+
+    path = synthesize(text, lang, codec="wav", sample_rate=8000)
+    return f"{public_base()}/dialpad/audio/{path.name}"
+
+
 def log_access(patient_id: str, menu: str, lang: str, source: str) -> None:
     LOGS.append(
         {

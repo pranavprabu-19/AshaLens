@@ -21,7 +21,7 @@ from features import doctype_features, quality_features, to_array  # noqa: E402
 from ner_regex_baseline import extract as regex_extract  # noqa: E402
 from routers.dialpad_pwa import router as dialpad_router  # noqa: E402
 from routers.ivr_exotel import router as exotel_router  # noqa: E402
-from routers.ivr_twilio import router as twilio_router  # noqa: E402
+from routers.ivr_twilio import alias_router, router as twilio_router  # noqa: E402
 
 app = FastAPI(
     title="AshaLens ML API",
@@ -31,6 +31,7 @@ app = FastAPI(
 app.include_router(dialpad_router)
 app.include_router(exotel_router)
 app.include_router(twilio_router)
+app.include_router(alias_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],

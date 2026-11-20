@@ -106,7 +106,7 @@ Patients on keypad phones, or households sharing one smartphone, can hear confir
 Two modes share one clinical engine in `apps/ml-api/services/dialpad_core.py`:
 
 - **In-app (Mode B):** `POST /dialpad/auth` then `GET /dialpad/insights/{patient_id}`. Audio is MP3 from Sarvam Bulbul v4 Flash, cached on disk.
-- **Feature phone (Mode A):** Exotel webhooks in `apps/ml-api/routers/ivr_exotel.py`. Telephony audio is 8000 Hz WAV. A thin Twilio TwiML adapter exists for local demos only. Exotel is the India production path because domestic calls need an Indian number.
+- **Feature phone (Mode A):** Exotel webhooks in `apps/ml-api/routers/ivr_exotel.py`. Telephony audio is 8000 Hz WAV. Twilio demos use `/ivr/welcome` and `/ivr/menu` (same keypad, Sarvam audio with a spoken fallback). Exotel is the India production path because domestic calls need an Indian number. Setup steps are in [docs/ivr-setup.md](docs/ivr-setup.md).
 
 | Key | What the patient hears |
 | --- | --- |
