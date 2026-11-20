@@ -6,6 +6,10 @@ Photograph a prescription, lab slip, or MCP card. Flag duplicate medicines, know
 
 Demo clinic: **Malligai PHC** (40 synthetic patients).
 
+## Where AshaLens fits
+
+eSanjeevani connects a patient or rural centre to a doctor over video. AshaLens sits before and after that call: it reads household paper, flags checklists, and speaks confirmed medicines. It should feed a consult, not replace one. There is no live eSanjeevani or ABHA integration in this repo. See [docs/esanjeevani-gap-roadmap.md](docs/esanjeevani-gap-roadmap.md).
+
 ## Tech stack
 
 ### Frontend (`apps/web`)
@@ -92,7 +96,8 @@ Demo clinic: **Malligai PHC** (40 synthetic patients).
 - [ ] Supabase Auth (phone OTP) and offline PIN unlock
 - [ ] Full Tamil UI
 - [ ] Docker, GitHub Actions, and model versioning
-- [ ] HL7 FHIR / ABDM-compatible export
+- [x] Local FHIR JSON download from the consult summary (not an ABDM or eSanjeevani submission)
+- [ ] ABDM sandbox linking and a live consent-manager flow
 
 ## Patient Dial-Pad Insights
 

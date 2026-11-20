@@ -26,8 +26,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hideNav = path === "/app/consent";
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg bg-cream pb-24">
-      <header className="flex items-center justify-between border-b border-sand px-4 py-3">
+    <div className="mx-auto min-h-dvh max-w-lg bg-cream pb-24 print:bg-white print:pb-0">
+      <header className="flex items-center justify-between border-b border-sand px-4 py-3 print:hidden">
         <div>
           <p className="font-display text-lg text-teal-dark">AshaLens</p>
           <p className="text-xs text-ink/60">

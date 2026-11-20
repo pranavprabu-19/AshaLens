@@ -8,6 +8,7 @@ export type StoredState = {
       medicines?: import("./types").Medicine[];
       documents?: import("./types").CapturedDocument[];
       vitals?: import("./types").Vital[];
+      abhaId?: string;
     }
   >;
 };
@@ -49,6 +50,7 @@ export function patchPatient(
     medicines: patch.medicines ?? prev.medicines,
     documents: patch.documents ?? prev.documents,
     vitals: patch.vitals ?? prev.vitals,
+    abhaId: patch.abhaId !== undefined ? patch.abhaId : prev.abhaId,
   };
   saveState(s);
 }

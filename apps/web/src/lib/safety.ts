@@ -16,9 +16,24 @@ const INTERACTIONS: { a: string; b: string; message: string; messageTa: string }
 
 const PREGNANCY_AVOID = new Set(formulary.pregnancy_avoid);
 
-function norm(name: string) {
-  const lower = name.trim().toLowerCase();
-  return GENERIC[lower] ?? lower.split(" ")[0];
+type ClassGroup = { members: string[]; en: string; ta: string };
+
+const DUPLICATE_CLASSES = (formulary.duplicate_classes ?? []) as ClassGroup[];
+
+export function norm(name: string) {
+  const lower = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9 +\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (GENERIC[lower]) return GENERIC[lower];
+  const first = lower.split(" ")[0];
+  if (GENERIC[first]) return GENERIC[first];
+  const contained = Object.keys(GENERIC)
+    .filter((key) => key.length >= 5 && lower.includes(key))
+    .sort((a, b) => b.length - a.length);
+  return contained.length ? GENERIC[contained[0]] : first;
 }
 
 const DANGER_COPY: Record<string, { en: string; ta: string }> = {
@@ -115,6 +130,19 @@ export function evaluateSafety(patient: Patient): Alert[] {
         messageTa: `${k} இரண்டு முறை இருக்கலாம். இரண்டையும் கொடுக்கும் முன் மருத்துவரிடம் உறுதி செய்யுங்கள்.`,
       });
     }
+  }
+
+  const keySet = new Set(keys);
+  for (const group of DUPLICATE_CLASSES) {
+    const present = group.members.filter((member) => keySet.has(member));
+    if (present.length < 2) continue;
+    alerts.push({
+      id: `class-${patient.id}-${present.join("-")}`,
+      severity: "high",
+      kind: "duplicate",
+      message: group.en,
+      messageTa: group.ta,
+    });
   }
 
   for (const pair of INTERACTIONS) {

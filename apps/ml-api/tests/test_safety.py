@@ -65,3 +65,68 @@ def test_three_demo_slips_work_without_cloud():
         assert generics <= found
         assert all(item["confidence"] >= 0.65 for item in result["items"])
         assert result["disclaimer"]
+
+
+KIND_BY_PREFIX = {
+    "INTERACTION": "interaction",
+    "DUPLICATE_SALT": "duplicate",
+    "DUPLICATE_CLASS": "duplicate_class",
+    "NHM_DANGER_SIGN": "danger_sign",
+    "NHM_HIGH_RISK": "high_risk",
+    "PREGNANCY_CONTRAINDICATION": "pregnancy",
+}
+
+
+def _tiny_pdf(line: str) -> bytes:
+    stream = f"BT /F1 18 Tf 36 100 Td ({line}) Tj ET".encode("latin-1")
+    parts = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    header = b"%PDF-1.4\n"
+    body = b""
+    offsets = [0]
+    cursor = len(header)
+    for index, part in enumerate(parts, start=1):
+        offsets.append(cursor)
+        chunk = f"{index} 0 obj\n".encode() + part + b"\nendobj\n"
+        body += chunk
+        cursor += len(chunk)
+    xref = b"xref\n0 6\n0000000000 65535 f \n"
+    for offset in offsets[1:]:
+        xref += f"{offset:010d} 00000 n \n".encode()
+    trailer = f"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{cursor}\n%%EOF\n".encode()
+    return header + body + xref + trailer
+
+
+def test_text_pdf_uses_the_same_extractor():
+    pdf = _tiny_pdf("Tab Dolo 650 mg 1-0-1")
+    result = extract_document(pdf, "", "application/pdf")
+    assert result["source"] == "pdf"
+    assert any(item["generic"] == "paracetamol" for item in result["items"])
+    blank = extract_document(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n", "", "application/pdf")
+    assert blank["source"] == "none"
+    assert blank["items"] == []
+
+
+def test_rx_gold_flags():
+    gold = json.loads((Path(__file__).resolve().parents[1] / "services" / "rx_gold.json").read_text(encoding="utf-8"))
+    assert len(gold) == 25
+    for case in gold:
+        result = extract_document(None, case["raw_text"])
+        kinds = [alert["kind"] for alert in result["alerts"]]
+        expected = case["expected_flag"]
+        if expected == "SAFE":
+            assert kinds == [], (case["id"], kinds)
+            continue
+        prefix = expected.split(":", 1)[0]
+        assert KIND_BY_PREFIX[prefix] in kinds, (case["id"], kinds, expected)
+        text = " ".join(alert["en"] for alert in result["alerts"])
+        if case["id"] == "RX-005":
+            assert "does not diagnose pre-eclampsia" in text
+        if case["id"] == "RX-016":
+            assert "Not a diagnosis" in text
+            assert "diabetes" not in text.lower()

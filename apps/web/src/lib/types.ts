@@ -59,6 +59,7 @@ export type Patient = {
   vitals: Vital[];
   documents: CapturedDocument[];
   reportedSigns?: string[];
+  abhaId?: string;
 };
 
 export type Asha = {

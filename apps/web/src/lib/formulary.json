@@ -5,6 +5,7 @@
     "dolo": "paracetamol",
     "dolo-650": "paracetamol",
     "crocin": "paracetamol",
+    "crocin advance": "paracetamol",
     "calpol": "paracetamol",
     "tylenol": "paracetamol",
     "pacimol": "paracetamol",
@@ -19,6 +20,7 @@
     "autrin": "ferrous",
     "livogen": "ferrous",
     "orofer": "ferrous",
+    "iron sucrose": "ferrous",
     "calcium": "calcium",
     "calcium carbonate": "calcium",
     "shelcal": "calcium",
@@ -75,7 +77,16 @@
     "kcl": "potassium",
     "levothyroxine": "levothyroxine",
     "thyronorm": "levothyroxine",
-    "eltroxin": "levothyroxine"
+    "eltroxin": "levothyroxine",
+    "pan-40": "pantoprazole",
+    "pan 40": "pantoprazole",
+    "pantoprazole": "pantoprazole",
+    "diclofenac": "diclofenac",
+    "cetirizine": "cetirizine",
+    "okacet": "cetirizine",
+    "levocetirizine": "levocetirizine",
+    "labetalol": "labetalol",
+    "telmisartan": "telmisartan"
   },
   "frequencies": {
     "od": "once daily",
@@ -88,7 +99,8 @@
     "1-0-1": "morning and night",
     "1-0-0": "morning",
     "0-0-1": "night",
-    "1-1-1": "morning, afternoon and night"
+    "1-1-1": "morning, afternoon and night",
+    "0-1-0": "afternoon"
   },
   "interactions": [
     {"a": "ferrous", "b": "calcium", "en": "Iron and calcium taken together reduce iron absorption. Space them at least 2 hours apart.", "ta": "இரும்பும் கால்சியமும் ஒன்றாக எடுத்தால் இரும்பு சத்து குறையும். 2 மணி நேரம் இடைவெளி விடுங்கள்."},
@@ -105,9 +117,17 @@
     {"a": "ciprofloxacin", "b": "antacid", "en": "Antacids block ciprofloxacin. Separate them by at least 2 hours.", "ta": "அமிலநீக்கி சிப்ரோஃப்ளோக்சாசின் உறிஞ்சலை தடுக்கும். 2 மணி நேரம் இடைவெளி."},
     {"a": "doxycycline", "b": "antacid", "en": "Antacids reduce doxycycline absorption. Take them at different times.", "ta": "அமிலநீக்கி டாக்சிசைக்ளின் உறிஞ்சலை குறைக்கும்."},
     {"a": "doxycycline", "b": "calcium", "en": "Calcium reduces doxycycline absorption. Space the doses.", "ta": "கால்சியம் டாக்சிசைக்ளின் உறிஞ்சலை குறைக்கும்."},
-    {"a": "aspirin", "b": "ibuprofen", "en": "Two pain tablets together raise stomach-bleed risk. Confirm both are intended.", "ta": "இரண்டு வலி மாத்திரைகள் சேர்ந்தால் வயிற்று இரத்தப்போக்கு ஆபத்து."}
+    {"a": "aspirin", "b": "ibuprofen", "en": "Two pain tablets together raise stomach-bleed risk. Confirm both are intended.", "ta": "இரண்டு வலி மாத்திரைகள் சேர்ந்தால் வயிற்று இரத்தப்போக்கு ஆபத்து."},
+    {"a": "levothyroxine", "b": "calcium", "en": "Calcium blocks levothyroxine absorption. Space them by at least 4 hours.", "ta": "கால்சியம் லெவோதைராக்சின் உறிஞ்சலை தடுக்கும். குறைந்தது 4 மணி நேரம் இடைவெளி விடுங்கள்."}
   ],
-  "pregnancy_avoid": ["ibuprofen", "warfarin", "doxycycline", "enalapril", "losartan", "atorvastatin"],
+  "duplicate_classes": [
+    {
+      "members": ["cetirizine", "levocetirizine"],
+      "en": "Cetirizine and levocetirizine are the same antihistamine class. Giving both raises sedation risk. Confirm with the doctor.",
+      "ta": "செடிரிசின் மற்றும் லெவோசெடிரிசின் ஒரே வகை. இரண்டையும் சேர்த்தால் தூக்கம் அதிகமாகும். மருத்துவரிடம் உறுதி செய்யுங்கள்."
+    }
+  ],
+  "pregnancy_avoid": ["ibuprofen", "warfarin", "doxycycline", "enalapril", "losartan", "atorvastatin", "diclofenac"],
   "pregnancy_note": {
     "en": "This medicine is on the pregnancy caution list. Do not start or stop it. Ask the PHC doctor.",
     "ta": "இந்த மருந்து கர்ப்ப எச்சரிக்கை பட்டியலில் உள்ளது. மருத்துவரிடம் கேளுங்கள்."

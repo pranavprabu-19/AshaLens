@@ -1,0 +1,261 @@
+[
+  {
+    "id": "RX-001",
+    "category": "ANC_Interaction_Trap",
+    "raw_text": "Tab. Ferrous Sulphate 200mg 1-0-0 x 30 days after food\nTab. Calcium Carbonate 500mg + Vit D3 1-0-0 x 30 days morning\nTab. Folic Acid 5mg 0-1-0 x 30 days",
+    "entities": [
+      {"drug": "Ferrous Sulphate", "dose": "200mg", "freq": "1-0-0", "duration": "30 days"},
+      {"drug": "Calcium Carbonate", "dose": "500mg", "freq": "1-0-0", "duration": "30 days"},
+      {"drug": "Folic Acid", "dose": "5mg", "freq": "0-1-0", "duration": "30 days"}
+    ],
+    "expected_flag": "INTERACTION: Ferrous + Calcium taken together blocks iron absorption; separate by 2 hours."
+  },
+  {
+    "id": "RX-002",
+    "category": "Duplicate_Brand_Error",
+    "raw_text": "Tab. Dolo 650mg 1-1-1 x 3 days SOS fever\nTab. Crocin Advance 500mg 1-0-1 x 3 days\nTab. Cetirizine 10mg 0-0-1 x 5 days",
+    "entities": [
+      {"drug": "Dolo", "dose": "650mg", "freq": "1-1-1", "duration": "3 days"},
+      {"drug": "Crocin Advance", "dose": "500mg", "freq": "1-0-1", "duration": "3 days"},
+      {"drug": "Cetirizine", "dose": "10mg", "freq": "0-0-1", "duration": "5 days"}
+    ],
+    "expected_flag": "DUPLICATE_SALT: Both Dolo and Crocin contain Paracetamol (hepatotoxicity risk)."
+  },
+  {
+    "id": "RX-003",
+    "category": "Hypertension_NSAID_Interaction",
+    "raw_text": "Tab. Amlodipine 5mg 1-0-0 x 30 days\nTab. Ibuprofen 400mg 1-0-1 x 5 days after food\nCap. Omeprazole 20mg 1-0-0 BF x 5 days",
+    "entities": [
+      {"drug": "Amlodipine", "dose": "5mg", "freq": "1-0-0", "duration": "30 days"},
+      {"drug": "Ibuprofen", "dose": "400mg", "freq": "1-0-1", "duration": "5 days"},
+      {"drug": "Omeprazole", "dose": "20mg", "freq": "1-0-0", "duration": "5 days"}
+    ],
+    "expected_flag": "INTERACTION: Ibuprofen reduces antihypertensive effect of Amlodipine."
+  },
+  {
+    "id": "RX-004",
+    "category": "Diabetes_NSAID_Risk",
+    "raw_text": "Tab. Metformin 500mg SR 1-0-1 after food x 30 days\nTab. Glimepiride 1mg 1-0-0 before breakfast x 30 days\nTab. Ibuprofen 400mg 1-0-1 x 3 days",
+    "entities": [
+      {"drug": "Metformin", "dose": "500mg", "freq": "1-0-1", "duration": "30 days"},
+      {"drug": "Glimepiride", "dose": "1mg", "freq": "1-0-0", "duration": "30 days"},
+      {"drug": "Ibuprofen", "dose": "400mg", "freq": "1-0-1", "duration": "3 days"}
+    ],
+    "expected_flag": "INTERACTION: Metformin + Ibuprofen increases renal impairment / lactic acidosis risk."
+  },
+  {
+    "id": "RX-005",
+    "category": "Pregnancy_High_BP_Alert",
+    "raw_text": "ANC 28 wks | BP: 148/94 mmHg | Hb: 9.8 g/dL\nTab. Labetalol 100mg 1-0-1 x 15 days\nTab. Calcium 500mg 0-1-0 x 30 days",
+    "entities": [
+      {"drug": "Labetalol", "dose": "100mg", "freq": "1-0-1", "duration": "15 days"},
+      {"drug": "Calcium", "dose": "500mg", "freq": "0-1-0", "duration": "30 days"}
+    ],
+    "expected_flag": "NHM_DANGER_SIGN: Systolic BP >= 140 mmHg in pregnancy (Preeclampsia referral)."
+  },
+  {
+    "id": "RX-006",
+    "category": "Severe_Maternal_Anemia",
+    "raw_text": "ANC 24 wks | Hb: 6.4 g/dL | Pallor++\nInj. Iron Sucrose 100mg IV alternate days x 5 doses\nTab. Albendazole 400mg 1 tab stat",
+    "entities": [
+      {"drug": "Iron Sucrose", "dose": "100mg", "freq": "alternate days", "duration": "5 doses"},
+      {"drug": "Albendazole", "dose": "400mg", "freq": "stat", "duration": "1 day"}
+    ],
+    "expected_flag": "NHM_DANGER_SIGN: Severe Anemia (Hb < 7.0 g/dL) — urgent PHC doctor review."
+  },
+  {
+    "id": "RX-007",
+    "category": "Safe_Standard_URI",
+    "raw_text": "Cap. Amoxicillin 500mg 1-1-1 x 5 days\nTab. Paracetamol 500mg 1-0-1 x 3 days\nSyp. Ambroxol 5ml 1-1-1 x 5 days",
+    "entities": [
+      {"drug": "Amoxicillin", "dose": "500mg", "freq": "1-1-1", "duration": "5 days"},
+      {"drug": "Paracetamol", "dose": "500mg", "freq": "1-0-1", "duration": "3 days"},
+      {"drug": "Ambroxol", "dose": "5ml", "freq": "1-1-1", "duration": "5 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-008",
+    "category": "Duplicate_PPI_Error",
+    "raw_text": "Tab. Pan-40 1-0-0 before food x 14 days\nCap. Pantoprazole 40mg 1-0-0 BF x 10 days\nTab. Domperidone 10mg 1-0-1 x 5 days",
+    "entities": [
+      {"drug": "Pan-40", "dose": "40mg", "freq": "1-0-0", "duration": "14 days"},
+      {"drug": "Pantoprazole", "dose": "40mg", "freq": "1-0-0", "duration": "10 days"},
+      {"drug": "Domperidone", "dose": "10mg", "freq": "1-0-1", "duration": "5 days"}
+    ],
+    "expected_flag": "DUPLICATE_SALT: Pan-40 and Pantoprazole 40mg are identical."
+  },
+  {
+    "id": "RX-009",
+    "category": "Safe_Cardio_Lipid",
+    "raw_text": "Tab. Telmisartan 40mg 1-0-0 x 30 days\nTab. Atorvastatin 10mg 0-0-1 x 30 days\nTab. Ecosprin 75mg 0-1-0 after lunch x 30 days",
+    "entities": [
+      {"drug": "Telmisartan", "dose": "40mg", "freq": "1-0-0", "duration": "30 days"},
+      {"drug": "Atorvastatin", "dose": "10mg", "freq": "0-0-1", "duration": "30 days"},
+      {"drug": "Ecosprin", "dose": "75mg", "freq": "0-1-0", "duration": "30 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-010",
+    "category": "Pediatric_Diarrhea_PHC",
+    "raw_text": "ORS Powder 1 sachet in 1L boiled cooled water\nTab. Zinc Sulphate 20mg 1-0-0 dissolved in water x 14 days\nSyp. Paracetamol 250mg/5ml 4ml SOS fever",
+    "entities": [
+      {"drug": "ORS Powder", "dose": "1 sachet", "freq": "SOS", "duration": "3 days"},
+      {"drug": "Zinc Sulphate", "dose": "20mg", "freq": "1-0-0", "duration": "14 days"},
+      {"drug": "Paracetamol", "dose": "250mg/5ml", "freq": "SOS", "duration": "3 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-011",
+    "category": "Duplicate_NSAID_LASA",
+    "raw_text": "Tab. Combiflam 1-0-1 x 3 days after food\nTab. Brufen 400mg 1-0-1 x 3 days\nTab. Ranitidine 150mg 1-0-1 x 5 days",
+    "entities": [
+      {"drug": "Combiflam", "dose": "400mg/325mg", "freq": "1-0-1", "duration": "3 days"},
+      {"drug": "Brufen", "dose": "400mg", "freq": "1-0-1", "duration": "3 days"},
+      {"drug": "Ranitidine", "dose": "150mg", "freq": "1-0-1", "duration": "5 days"}
+    ],
+    "expected_flag": "DUPLICATE_SALT: Combiflam already contains Ibuprofen 400mg (same as Brufen)."
+  },
+  {
+    "id": "RX-012",
+    "category": "Safe_Hypothyroid",
+    "raw_text": "Tab. Thyronorm 50mcg 1-0-0 empty stomach x 60 days\nTab. Vitamin D3 60000 IU once weekly x 8 weeks",
+    "entities": [
+      {"drug": "Thyronorm", "dose": "50mcg", "freq": "1-0-0", "duration": "60 days"},
+      {"drug": "Vitamin D3", "dose": "60000 IU", "freq": "weekly", "duration": "8 weeks"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-013",
+    "category": "Thyroxine_Calcium_Interaction",
+    "raw_text": "Tab. Eltroxin 75mcg 1-0-0 morning x 30 days\nTab. Shelcal 500mg 1-0-0 morning x 30 days",
+    "entities": [
+      {"drug": "Eltroxin", "dose": "75mcg", "freq": "1-0-0", "duration": "30 days"},
+      {"drug": "Shelcal", "dose": "500mg", "freq": "1-0-0", "duration": "30 days"}
+    ],
+    "expected_flag": "INTERACTION: Calcium blocks Levothyroxine absorption; space by at least 4 hours."
+  },
+  {
+    "id": "RX-014",
+    "category": "Safe_Azithromycin_Course",
+    "raw_text": "Tab. Azithral 500mg 1-0-0 x 3 days\nTab. Montair LC 0-0-1 x 10 days\nSteam inhalation BD",
+    "entities": [
+      {"drug": "Azithral", "dose": "500mg", "freq": "1-0-0", "duration": "3 days"},
+      {"drug": "Montair LC", "dose": "10mg/5mg", "freq": "0-0-1", "duration": "10 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-015",
+    "category": "Safe_UTI_Antibiotic",
+    "raw_text": "Tab. Nitrofurantoin 100mg 1-0-1 after food x 5 days\nSyp. Citralka 10ml in 1 glass water 1-1-1 x 5 days",
+    "entities": [
+      {"drug": "Nitrofurantoin", "dose": "100mg", "freq": "1-0-1", "duration": "5 days"},
+      {"drug": "Citralka", "dose": "10ml", "freq": "1-1-1", "duration": "5 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-016",
+    "category": "GDM_Pregnancy_Insulin",
+    "raw_text": "ANC 30 wks | FBS: 132 mg/dL | PPBS: 168 mg/dL\nInj. Human Mixtard 30/70 12U-0-8U SC before meals\nTab. Folic Acid 5mg 0-1-0 x 30 days",
+    "entities": [
+      {"drug": "Human Mixtard 30/70", "dose": "12U-0-8U", "freq": "1-0-1", "duration": "30 days"},
+      {"drug": "Folic Acid", "dose": "5mg", "freq": "0-1-0", "duration": "30 days"}
+    ],
+    "expected_flag": "NHM_HIGH_RISK: Gestational Diabetes on Insulin — weekly PHC follow-up."
+  },
+  {
+    "id": "RX-017",
+    "category": "Duplicate_Antihistamine",
+    "raw_text": "Tab. Okacet 10mg 0-0-1 x 5 days\nTab. Levocetirizine 5mg 0-0-1 x 5 days\nNasal Saline Drops 2 drops BD",
+    "entities": [
+      {"drug": "Okacet", "dose": "10mg", "freq": "0-0-1", "duration": "5 days"},
+      {"drug": "Levocetirizine", "dose": "5mg", "freq": "0-0-1", "duration": "5 days"}
+    ],
+    "expected_flag": "DUPLICATE_CLASS: Co-prescribed Cetirizine + Levocetirizine (excess sedation risk)."
+  },
+  {
+    "id": "RX-018",
+    "category": "Safe_Asthma_Inhaler",
+    "raw_text": "Asthalin Inhaler 100mcg 2 puffs SOS wheeze\nForacort 200 Rotacap 1 cap BD via Rotahaler x 30 days",
+    "entities": [
+      {"drug": "Asthalin", "dose": "100mcg", "freq": "SOS", "duration": "30 days"},
+      {"drug": "Foracort", "dose": "200mcg", "freq": "1-0-1", "duration": "30 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-019",
+    "category": "Safe_Dengue_Supportive",
+    "raw_text": "Platelets: 1.15 lakh | NS1 Positive\nTab. Paracetamol 650mg 1-1-1 SOS fever (Avoid NSAIDs)\nORS 2L/day",
+    "entities": [
+      {"drug": "Paracetamol", "dose": "650mg", "freq": "1-1-1", "duration": "3 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-020",
+    "category": "Contraindicated_NSAID_Pregnancy",
+    "raw_text": "ANC 32 wks | Low back ache\nTab. Diclofenac 50mg 1-0-1 x 5 days\nTab. Pantoprazole 40mg 1-0-0 x 5 days",
+    "entities": [
+      {"drug": "Diclofenac", "dose": "50mg", "freq": "1-0-1", "duration": "5 days"},
+      {"drug": "Pantoprazole", "dose": "40mg", "freq": "1-0-0", "duration": "5 days"}
+    ],
+    "expected_flag": "PREGNANCY_CONTRAINDICATION: NSAIDs (Diclofenac) unsafe in 3rd trimester."
+  },
+  {
+    "id": "RX-021",
+    "category": "Safe_Gastritis_Combo",
+    "raw_text": "Cap. Pan-D 1-0-0 before breakfast x 14 days\nSyp. Sucralfate 10ml 1-1-1 before meals x 7 days",
+    "entities": [
+      {"drug": "Pan-D", "dose": "40mg/30mg", "freq": "1-0-0", "duration": "14 days"},
+      {"drug": "Sucralfate", "dose": "10ml", "freq": "1-1-1", "duration": "7 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-022",
+    "category": "Safe_TB_DOTS_Phase",
+    "raw_text": "4-FDC (HRZE) 3 tabs 1-0-0 empty stomach x 28 days\nTab. Pyridoxine 40mg 1-0-0 x 28 days",
+    "entities": [
+      {"drug": "4-FDC HRZE", "dose": "3 tabs", "freq": "1-0-0", "duration": "28 days"},
+      {"drug": "Pyridoxine", "dose": "40mg", "freq": "1-0-0", "duration": "28 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-023",
+    "category": "Safe_Scabies_PHC",
+    "raw_text": "Permethrin 5% Lotion apply neck to toe overnight once\nTab. Cetirizine 10mg 0-0-1 x 5 days",
+    "entities": [
+      {"drug": "Permethrin", "dose": "5%", "freq": "once", "duration": "1 day"},
+      {"drug": "Cetirizine", "dose": "10mg", "freq": "0-0-1", "duration": "5 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-024",
+    "category": "Safe_Vertigo_Elderly",
+    "raw_text": "Tab. Betahistine 16mg 1-0-1 x 10 days\nTab. Neurobion Forte 0-1-0 x 30 days",
+    "entities": [
+      {"drug": "Betahistine", "dose": "16mg", "freq": "1-0-1", "duration": "10 days"},
+      {"drug": "Neurobion Forte", "dose": "1 tab", "freq": "0-1-0", "duration": "30 days"}
+    ],
+    "expected_flag": "SAFE"
+  },
+  {
+    "id": "RX-025",
+    "category": "Safe_Dental_Abscess",
+    "raw_text": "Tab. Augmentin 625 Duo 1-0-1 after food x 5 days\nTab. Metrogyl 400mg 1-1-1 after food x 5 days\nTab. Zerodol-P 1-0-1 x 3 days",
+    "entities": [
+      {"drug": "Augmentin 625 Duo", "dose": "625mg", "freq": "1-0-1", "duration": "5 days"},
+      {"drug": "Metrogyl", "dose": "400mg", "freq": "1-1-1", "duration": "5 days"},
+      {"drug": "Zerodol-P", "dose": "100mg/325mg", "freq": "1-0-1", "duration": "3 days"}
+    ],
+    "expected_flag": "SAFE"
+  }
+]

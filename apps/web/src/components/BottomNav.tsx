@@ -17,7 +17,7 @@ export function BottomNav() {
   const path = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-sand bg-cream/95 backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-sand bg-cream/95 backdrop-blur print:hidden">
       <ul className="mx-auto grid max-w-lg grid-cols-5 px-2 py-2">
         {items.map((item) => {
           const active = item.href === "/app" ? path === "/app" : path.startsWith(item.href);

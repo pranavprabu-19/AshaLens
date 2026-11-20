@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { FormEvent, useState } from "react";
 import { useParams } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { AlertList } from "@/components/AlertList";
 import { VitalForm } from "@/components/VitalForm";
 import { evaluateSafety, explainDrug } from "@/lib/safety";
 import { ASHAS } from "@/lib/seed";
+import { patchPatient } from "@/lib/storage";
 
 export default function PatientPage() {
   const { id } = useParams<{ id: string }>();
-  const { patients } = useStore();
+  const { patients, refresh } = useStore();
   const patient = patients.find((p) => p.id === id);
+  const [abha, setAbha] = useState("");
+  const [abhaNote, setAbhaNote] = useState("");
 
   if (!patient) {
     return <p className="text-sm text-alert">Patient not on this roster.</p>;
@@ -20,6 +24,18 @@ export default function PatientPage() {
   const alerts = evaluateSafety(patient);
   const asha = ASHAS.find((a) => a.id === patient.ashaId);
   const latest = patient.vitals[patient.vitals.length - 1];
+
+  function onAbha(event: FormEvent) {
+    event.preventDefault();
+    const digits = abha.replace(/\D/g, "");
+    if (digits && digits.length !== 14) {
+      setAbhaNote("ABHA is 14 digits. Leave it blank if you do not have one.");
+      return;
+    }
+    patchPatient(patient.id, { abhaId: digits });
+    refresh();
+    setAbhaNote(digits ? "Saved on this phone. Not checked with ABDM." : "Cleared.");
+  }
 
   return (
     <div className="space-y-4">
@@ -39,6 +55,29 @@ export default function PatientPage() {
       >
         Photograph a paper slip
       </Link>
+      <Link
+        href={`/app/patients/${patient.id}/summary`}
+        className="block rounded-2xl border border-teal py-3 text-center font-semibold text-teal-dark"
+      >
+        Show for consult
+      </Link>
+
+      <form onSubmit={onAbha} className="rounded-3xl bg-white p-4 shadow-card">
+        <h2 className="font-display text-lg">ABHA</h2>
+        <p className="mt-1 text-xs text-ink/55">Not checked with ABDM. Optional.</p>
+        <p className="mt-1 text-sm">{patient.abhaId ? patient.abhaId : "No number saved."}</p>
+        <input
+          value={abha}
+          onChange={(event) => setAbha(event.target.value)}
+          inputMode="numeric"
+          placeholder="14 digits"
+          className="mt-2 w-full rounded-2xl border border-sand bg-paper px-3 py-2 text-sm"
+        />
+        <button type="submit" className="mt-2 rounded-2xl bg-sand px-3 py-2 text-sm font-semibold text-teal-dark">
+          Save ABHA
+        </button>
+        {abhaNote ? <p className="mt-2 text-xs text-ink/60">{abhaNote}</p> : null}
+      </form>
 
       <AlertList alerts={alerts} />
 

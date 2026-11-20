@@ -36,6 +36,8 @@ export default function CapturePage() {
   const [source, setSource] = useState("browser");
   const [items, setItems] = useState<ExtractItem[]>([]);
   const [picked, setPicked] = useState<boolean[]>([]);
+  const [alerts, setAlerts] = useState<{ kind: string; en: string; ta: string }[]>([]);
+  const [disclaimer, setDisclaimer] = useState("");
 
   const SAMPLES = [
     "Tab Dolo 650 mg 1-0-1\nTab Glycomet 500 mg BD",
@@ -48,6 +50,23 @@ export default function CapturePage() {
 
   async function onFile(file: File | undefined) {
     if (!file) return;
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (isPdf) {
+      setBusy(true);
+      setPreview(null);
+      setQuality(null);
+      try {
+        const extracted = await extractDocument(file);
+        applyExtracted(extracted.items);
+        setAlerts(extracted.alerts);
+        setDisclaimer(extracted.disclaimer);
+        setSource(extracted.source || "none");
+      } catch {
+        setSource("offline-queue");
+      }
+      setBusy(false);
+      return;
+    }
     setBusy(true);
     setPreview(URL.createObjectURL(file));
     const local = await estimateQuality(file);
@@ -67,6 +86,8 @@ export default function CapturePage() {
       }
       const extracted = await extractDocument(file);
       applyExtracted(extracted.items);
+      setAlerts(extracted.alerts);
+      setDisclaimer(extracted.disclaimer);
       setSource(extracted.source);
     } catch {
       await enqueueCapture({
@@ -160,10 +181,10 @@ export default function CapturePage() {
       </div>
 
       <label className="block rounded-3xl border border-dashed border-teal/40 bg-white p-4 text-center">
-        <span className="font-semibold text-teal-dark">Take or upload a photo</span>
+        <span className="font-semibold text-teal-dark">Take or upload a photo or PDF</span>
         <input
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           capture="environment"
           className="mt-3 block w-full text-sm"
           onChange={(e) => onFile(e.target.files?.[0])}
@@ -180,6 +201,8 @@ export default function CapturePage() {
               setOcrLine(sample);
               void extractDocument(undefined, sample).then((result) => {
                 applyExtracted(result.items);
+                setAlerts(result.alerts);
+                setDisclaimer(result.disclaimer);
                 setSource(result.source);
               });
             }}
@@ -188,6 +211,26 @@ export default function CapturePage() {
           </button>
         ))}
       </div>
+
+      {items.length ? (
+        <Card>
+          <h2 className="font-display text-lg">Checklist flags</h2>
+          {alerts.length === 0 ? (
+            <p className="mt-2 text-sm">No checklist flag on these lines.</p>
+          ) : (
+            <ul className="mt-2 space-y-2">
+              {alerts.map((alert) => (
+                <li key={`${alert.kind}-${alert.en}`} className="rounded-2xl border border-alert/30 bg-alert/10 px-3 py-2 text-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide">{alert.kind.replace(/_/g, " ")}</p>
+                  <p className="mt-1 font-medium">{alert.en}</p>
+                  <p className="mt-1 text-teal-dark">{alert.ta}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {disclaimer ? <p className="mt-2 text-xs text-ink/60">{disclaimer}</p> : null}
+        </Card>
+      ) : null}
 
       {items.length ? (
         <Card>

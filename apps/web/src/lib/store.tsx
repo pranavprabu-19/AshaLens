@@ -26,6 +26,7 @@ function mergePatients(): Patient[] {
       medicines: e.medicines ?? p.medicines,
       documents: e.documents ?? p.documents,
       vitals: e.vitals ?? p.vitals,
+      abhaId: e.abhaId ?? p.abhaId,
     };
   });
 }

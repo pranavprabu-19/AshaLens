@@ -258,9 +258,9 @@ def explain(body: ExplainBody):
             print("explain llm:", type(exc).__name__)
     audio_url = None
     try:
-        from services.tts_sarvam import synthesize
+        from services.tts_sarvam import synthesize_tamil
 
-        path = synthesize(ta, "ta", codec="mp3", sample_rate=22050)
+        path = synthesize_tamil(ta)
         base = os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
         audio_url = f"{base}/dialpad/audio/{path.name}"
     except Exception as exc:  # noqa: BLE001

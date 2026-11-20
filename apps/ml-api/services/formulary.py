@@ -26,14 +26,19 @@ def canonical(name: str) -> tuple[str, float]:
     first = raw.split(" ")[0]
     if first in ALIASES:
         return ALIASES[first], 0.9
+    contained = [key for key in ALIASES if len(key) >= 5 and key in raw]
+    if contained:
+        return ALIASES[max(contained, key=len)], 0.9
     best_key = ""
     best = 0.0
     for key in ALIASES:
+        if abs(len(first) - len(key)) > 2:
+            continue
         score = SequenceMatcher(None, first, key).ratio()
         if score > best:
             best = score
             best_key = key
-    if best >= 0.84 and best_key:
+    if best >= 0.92 and best_key:
         return ALIASES[best_key], 0.72
     return first or raw, 0.4
 
@@ -47,8 +52,13 @@ def parse_dose(text: str) -> str:
 
 def parse_frequency(text: str) -> str:
     lower = text.lower()
+    for pattern in ("1-1-1", "1-0-1", "1-0-0", "0-0-1", "0-1-0"):
+        if pattern in FREQUENCIES and pattern in lower:
+            return FREQUENCIES[pattern]
     for token, phrase in FREQUENCIES.items():
-        if token in lower:
+        if re.fullmatch(r"\d-\d-\d", token):
+            continue
+        if re.search(rf"\b{re.escape(token)}\b", lower):
             return phrase
     return ""
 
@@ -71,7 +81,7 @@ def review_item(drug_text: str, raw_text: str, dose_hint: str = "") -> dict:
         "drug": drug_text.strip(),
         "generic": generic,
         "dose": dose or "unknown",
-        "frequency": parse_frequency(raw_text),
+        "frequency": parse_frequency(dose_hint or drug_text) or parse_frequency(raw_text),
         "confidence": round(score, 2),
         "needs_review": score < REVIEW_BELOW,
         "source": "formulary",
@@ -96,6 +106,10 @@ def interactions_for(generics: list[str], pregnant: bool = False) -> list[dict]:
                     "ta": f"{name} இரண்டு முறை இருக்கலாம். இரண்டையும் கொடுக்கும் முன் உறுதி செய்யுங்கள்.",
                 }
             )
+    for group in DATA.get("duplicate_classes", []):
+        present = [member for member in group["members"] if member in keys]
+        if len(present) >= 2:
+            found.append({"kind": "duplicate_class", "en": group["en"], "ta": group["ta"]})
     if pregnant:
         for name in keys:
             if name in PREGNANCY_AVOID:

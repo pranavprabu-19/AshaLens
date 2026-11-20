@@ -14,7 +14,7 @@ from typing import Optional, Tuple
 import joblib
 from PIL import Image
 
-from services.formulary import interactions_for, parse_dose, review_item
+from services.formulary import ALIASES, interactions_for, parse_dose, review_item
 
 HERE = Path(__file__).resolve().parent
 MODELS = HERE.parents[2] / "ml" / "models"
@@ -128,14 +128,65 @@ def read_paper(image_bytes: bytes, mime: str) -> Tuple[str, str]:
     return "", "none"
 
 
+def _vital_only(chunk: str) -> bool:
+    if not re.search(r"\b(bp|hb|fbs|ppbs|platelets|ns1)\b", chunk, re.I):
+        return False
+    lowered = chunk.lower()
+    return not any(len(key) >= 5 and key in lowered for key in ALIASES)
+
+
+def checklist_from_slip(text: str) -> tuple[bool, list[dict]]:
+    pregnant = bool(re.search(r"\banc\b|\d+\s*wks\b", text, re.I))
+    alerts = []
+    bp = re.search(r"\bBP:?\s*(\d{2,3})\s*/\s*(\d{2,3})", text, re.I)
+    if pregnant and bp and int(bp.group(1)) >= 140:
+        alerts.append(
+            {
+                "kind": "danger_sign",
+                "en": (
+                    f"Pregnancy blood pressure {bp.group(1)}/{bp.group(2)} is in the danger-sign range "
+                    "on the NHM checklist. Arrange a doctor review today. This app does not diagnose pre-eclampsia."
+                ),
+                "ta": "கர்ப்ப கால இரத்த அழுத்தம் ஆபத்து அறிகுறி வரம்பில் உள்ளது. இன்று மருத்துவரை அணுகுங்கள். இது நோயறிதல் அல்ல.",
+            }
+        )
+    hb = re.search(r"\bHb:?\s*(\d+(?:\.\d+)?)", text, re.I)
+    if hb and float(hb.group(1)) < 7:
+        alerts.append(
+            {
+                "kind": "danger_sign",
+                "en": (
+                    f"Haemoglobin {hb.group(1)} g/dL is in the severe-anaemia range used for referral checklists. "
+                    "Confirm with a lab and the doctor. Not a diagnosis."
+                ),
+                "ta": "ஹீமோகுளோபின் மிகவும் குறைவு. ஆய்வகம் மற்றும் மருத்துவரிடம் உறுதி செய்யுங்கள். இது நோயறிதல் அல்ல.",
+            }
+        )
+    fbs = re.search(r"\bFBS:?\s*(\d+)", text, re.I)
+    ppbs = re.search(r"\bPPBS:?\s*(\d+)", text, re.I)
+    high_sugar = (fbs is not None and int(fbs.group(1)) >= 126) or (ppbs is not None and int(ppbs.group(1)) >= 140)
+    lowered = text.lower()
+    if high_sugar and ("insulin" in lowered or "mixtard" in lowered):
+        alerts.append(
+            {
+                "kind": "high_risk",
+                "en": "ANC slip lists high sugar readings and insulin. Weekly PHC follow-up. Not a diagnosis.",
+                "ta": "அதிக சர்க்கரை அளவும் இன்சுலினும் உள்ளன. வாரந்தோறும் ஆரம்ப சுகாதார நிலையத்தில் பின்தொடரவும். இது நோயறிதல் அல்ல.",
+            }
+        )
+    return pregnant, alerts
+
+
 def items_from_text(text: str) -> list[dict]:
     items = []
     chunks = re.split(r"[\n;]+", text)
     for chunk in chunks:
+        if _vital_only(chunk):
+            continue
         if parse_dose(chunk) == "" and not re.search(r"[A-Za-z]{4,}", chunk):
             continue
         name = re.sub(r"\d+(?:\.\d+)?\s*(?:mg|g|ml|mcg|iu)\b", " ", chunk, flags=re.I)
-        name = re.sub(r"\b(tab|cap|syp|rx|od|bd|tds|hs|sos|ac|pc)\b", " ", name, flags=re.I)
+        name = re.sub(r"\b(tab|cap|syp|inj|rx|od|bd|tds|hs|sos|ac|pc)\b", " ", name, flags=re.I)
         name = re.sub(r"\b[01]-[01]-[01]\b", " ", name)
         name = re.sub(r"\s+", " ", name).strip(" -:.,")
         if len(name) < 3:
@@ -146,6 +197,17 @@ def items_from_text(text: str) -> list[dict]:
     return items
 
 
+def _pdf_text(data: bytes) -> str:
+    try:
+        from pypdf import PdfReader
+
+        reader = PdfReader(io.BytesIO(data))
+        return "\n".join((page.extract_text() or "") for page in reader.pages).strip()
+    except Exception as exc:  # noqa: BLE001
+        print("pdf text:", type(exc).__name__)
+        return ""
+
+
 def extract_document(
     image_bytes: Optional[bytes],
     text: str,
@@ -154,7 +216,12 @@ def extract_document(
 ) -> dict:
     labels = {}
     source = "text" if text.strip() else "none"
-    if image_bytes:
+    is_pdf = bool(image_bytes) and (mime == "application/pdf" or image_bytes[:5] == b"%PDF-")
+    if is_pdf and image_bytes is not None:
+        extracted = _pdf_text(image_bytes)
+        text = extracted or text
+        source = "pdf" if text.strip() else "none"
+    elif image_bytes:
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         labels = image_labels(image)
         if not text.strip():
@@ -163,12 +230,15 @@ def extract_document(
     if cached:
         source = "demo-cache"
     items = items_from_text(text)
+    slip_pregnant, vital_alerts = checklist_from_slip(text)
+    confident = [item["generic"] for item in items if item["confidence"] >= 0.65]
+    alerts = interactions_for(confident, pregnant=pregnant or slip_pregnant) + vital_alerts
     return {
         "quality": labels.get("quality"),
         "doc_type": labels.get("doc_type"),
         "raw_text": text,
         "source": source,
         "items": items,
-        "alerts": interactions_for([item["generic"] for item in items], pregnant=pregnant),
+        "alerts": alerts,
         "disclaimer": "Suggestions only. A person must confirm every field. Not a diagnosis.",
     }
