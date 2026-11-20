@@ -9,6 +9,7 @@ import os
 import re
 import time
 from pathlib import Path
+from typing import Optional, Tuple
 
 import joblib
 from PIL import Image
@@ -65,11 +66,15 @@ def _gemini(image_bytes: bytes, mime: str) -> str:
             }
         ]
     }
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}"
-    response = httpx.post(url, json=payload, timeout=25)
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+    response = httpx.post(url, json=payload, headers={"X-goog-api-key": key}, timeout=20.0)
     response.raise_for_status()
-    parts = response.json()["candidates"][0]["content"]["parts"]
-    return "\n".join(part.get("text", "") for part in parts)
+    body = response.json()
+    candidates = body.get("candidates") or []
+    if not candidates:
+        return ""
+    parts = ((candidates[0].get("content") or {}).get("parts")) or []
+    return "\n".join(str(part.get("text") or "") for part in parts if isinstance(part, dict))
 
 
 def _sarvam_vision(image_bytes: bytes) -> str:
@@ -80,7 +85,11 @@ def _sarvam_vision(image_bytes: bytes) -> str:
 
     client = SarvamAI(api_subscription_key=key)
     job = client.doc_ai.parse(file=[("slip.jpg", io.BytesIO(image_bytes), "image/jpeg")], language="en-IN")
-    job_id = getattr(job, "job_id", None) or job.get("job_id")
+    job_id = getattr(job, "job_id", None)
+    if not job_id and isinstance(job, dict):
+        job_id = job.get("job_id")
+    if not job_id:
+        return ""
     status = ""
     for _ in range(6):
         time.sleep(1)
@@ -91,10 +100,18 @@ def _sarvam_vision(image_bytes: bytes) -> str:
     if status not in {"completed", "partially_completed"}:
         return ""
     results = client.doc_ai.get_results(job_id)
-    return json.dumps(results.dict() if hasattr(results, "dict") else results)
+    if hasattr(results, "model_dump"):
+        payload = results.model_dump()
+    elif hasattr(results, "dict"):
+        payload = results.dict()
+    else:
+        payload = results
+    if isinstance(payload, (dict, list)):
+        return json.dumps(payload)
+    return str(payload)
 
 
-def read_paper(image_bytes: bytes, mime: str) -> tuple[str, str]:
+def read_paper(image_bytes: bytes, mime: str) -> Tuple[str, str]:
     if os.environ.get("GEMINI_API_KEY", "").strip():
         try:
             text = _gemini(image_bytes, mime)
@@ -129,7 +146,12 @@ def items_from_text(text: str) -> list[dict]:
     return items
 
 
-def extract_document(image_bytes: bytes | None, text: str, mime: str = "image/jpeg", pregnant: bool = False) -> dict:
+def extract_document(
+    image_bytes: Optional[bytes],
+    text: str,
+    mime: str = "image/jpeg",
+    pregnant: bool = False,
+) -> dict:
     labels = {}
     source = "text" if text.strip() else "none"
     if image_bytes:

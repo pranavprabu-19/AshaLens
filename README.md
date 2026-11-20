@@ -12,7 +12,7 @@ Demo clinic: **Malligai PHC** (40 synthetic patients).
 
 | Category | Technology | Version |
 | --- | --- | --- |
-| Framework | Next.js | 15.5.4 |
+| Framework | Next.js | 15.5.x |
 | UI | React | 19.1.0 |
 | Styling | Tailwind CSS | 3.4.17 |
 | Components | shadcn-style (custom) | — |
@@ -26,7 +26,7 @@ Demo clinic: **Malligai PHC** (40 synthetic patients).
 | Category | Technology | Version |
 | --- | --- | --- |
 | API | FastAPI + Uvicorn | 0.115 / 0.30 |
-| ML | scikit-learn | 1.5 |
+| ML | scikit-learn | 1.6.1 |
 | Data | NumPy, Pandas | 1.26 / 2.2 |
 | Image | OpenCV headless, Pillow | 4.10 / 10.4 |
 | Persistence | joblib | 1.4 |
@@ -39,7 +39,7 @@ Demo clinic: **Malligai PHC** (40 synthetic patients).
 | Service | Provider | Role |
 | --- | --- | --- |
 | Tamil and English speech | Sarvam Bulbul v4 Flash | Dial-pad and IVR audio |
-| Cloud document read | Sarvam Vision | Fallback when local OCR confidence is low |
+| Cloud document read | Gemini Flash, then Sarvam Vision | Photo extraction when a typed line is not used |
 | Chat | `sarvam-105b-conversations` | Optional post-confirmation wording |
 | Telephony | Exotel (primary), Twilio (dev only) | Feature-phone IVR |
 | Database | Supabase PostgreSQL | Planned production store with row-level security |

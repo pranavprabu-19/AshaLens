@@ -136,10 +136,15 @@ create index prescription_items_confirmed_idx on public.prescription_items (pres
 create index sync_queue_unsynced_idx on public.sync_queue (synced_at) where synced_at is null;
 create index dialpad_logs_patient_idx on public.dialpad_access_logs (patient_id, created_at desc);
 
-create trigger patients_updated_at before update on public.patients
-for each row execute function public.set_updated_at();
-create trigger prescriptions_updated_at before update on public.prescriptions
-for each row execute function public.set_updated_at();
+drop trigger if exists patients_updated_at on public.patients;
+create trigger patients_updated_at
+before update on public.patients
+for each row execute procedure public.set_updated_at();
+
+drop trigger if exists prescriptions_updated_at on public.prescriptions;
+create trigger prescriptions_updated_at
+before update on public.prescriptions
+for each row execute procedure public.set_updated_at();
 
 alter table public.phcs enable row level security;
 alter table public.users enable row level security;
@@ -273,4 +278,11 @@ create policy dialpad_logs_select on public.dialpad_access_logs
 for select to authenticated
 using (public.can_read_patient(patient_id));
 
+grant usage on schema public to authenticated, anon;
+grant select on public.phcs, public.users to authenticated;
+grant select, insert, update on public.patients, public.documents, public.prescriptions,
+  public.prescription_items, public.vitals_and_mcp, public.safety_alerts, public.sync_queue,
+  public.dialpad_access_logs to authenticated;
+
+revoke select (pin_hash) on public.users from authenticated, anon;
 revoke select (dialpad_pin_hash) on public.patients from authenticated, anon;
