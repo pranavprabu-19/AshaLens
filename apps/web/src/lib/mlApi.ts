@@ -33,6 +33,15 @@ export async function predictNer(text: string): Promise<NerPrediction> {
   return parseJson<NerPrediction>(res);
 }
 
+export async function speakTamil(text: string) {
+  const res = await fetch(`${ML_API}/speak`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text, confirmed: true }),
+  });
+  return parseJson<{ audio_url?: string | null; error?: string }>(res);
+}
+
 export async function explainDrugApi(drug: string) {
   const res = await fetch(`${ML_API}/explain`, {
     method: "POST",

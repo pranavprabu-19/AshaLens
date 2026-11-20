@@ -1,4 +1,4 @@
-import type { Alert, Medicine, Patient } from "./types";
+import type { Alert, AllergyRecord, Medicine, Patient } from "./types";
 import formulary from "./formulary.json";
 
 const GENERIC: Record<string, string> = formulary.aliases;
@@ -98,6 +98,30 @@ export const DRUG_EXPLAIN: Record<string, { en: string; ta: string }> = {
     ta: "இது கொழுப்பு மாத்திரை. பொதுவாக இரவில் எடுங்கள்.",
   },
 };
+
+export function checkAllergyConflict(drugNames: string[], allergies: AllergyRecord[]): Alert[] {
+  const alerts: Alert[] = [];
+  const seen = new Set<string>();
+  for (const name of drugNames) {
+    const salt = norm(name);
+    if (!salt) continue;
+    for (const allergy of allergies) {
+      const salts = new Set([norm(allergy.allergen), ...allergy.mappedSalts.map((item) => norm(item))]);
+      if (!salts.has(salt)) continue;
+      const id = `allergy-${allergy.id}-${salt}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      alerts.push({
+        id,
+        severity: "high",
+        kind: "allergy",
+        message: `${name} matches a stored ${allergy.allergen} allergy (${allergy.reactionEn}). Do not give this until a doctor confirms. This is not a diagnosis.`,
+        messageTa: `${name}: ${allergy.allergen} ஒவ்வாமை. ${allergy.reactionTamil} மருத்துவர் உறுதி செய்யும் வரை கொடுக்க வேண்டாம். இது நோய் கண்டறிதல் அல்ல.`,
+      });
+    }
+  }
+  return alerts;
+}
 
 export function explainDrug(name: string) {
   return DRUG_EXPLAIN[norm(name)];
@@ -204,6 +228,8 @@ export function evaluateSafety(patient: Patient): Alert[] {
       messageTa: copy.ta,
     });
   }
+
+  alerts.push(...checkAllergyConflict(meds.map((med) => med.name), patient.allergies ?? []));
 
   const dueDate = patient.nextVisit ?? patient.lastVisit;
   const overdueDays = daysSince(dueDate);

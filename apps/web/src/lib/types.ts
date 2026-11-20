@@ -22,7 +22,7 @@ export type Vital = {
   hemoglobin?: number;
 };
 
-export type AlertKind = "interaction" | "duplicate" | "overdue" | "danger_sign";
+export type AlertKind = "interaction" | "duplicate" | "overdue" | "danger_sign" | "allergy";
 export type Severity = "high" | "medium" | "info";
 
 export type Alert = {
@@ -40,6 +40,37 @@ export type CapturedDocument = {
   capturedAt: string;
   note?: string;
   dataUrl?: string;
+};
+
+export type AllergyRecord = {
+  id: string;
+  allergen: string;
+  mappedSalts: string[];
+  category: "drug" | "food" | "environment";
+  severity: "high" | "moderate";
+  reactionTamil: string;
+  reactionEn: string;
+};
+
+export type VaultDrug = {
+  name: string;
+  dose: string;
+  schedule: string;
+};
+
+export type HealthRecordItem = {
+  id: string;
+  date: string;
+  docType: "prescription" | "lab_slip" | "mcp_card";
+  facility: string;
+  imageUrl?: string;
+  confirmedEntities: {
+    drugs?: VaultDrug[];
+    vitals?: { hb?: number; bpSystolic?: number; bpDiastolic?: number; weightKg?: number };
+  };
+  safetyFlags: string[];
+  tamilSummary: string;
+  verifiedByHuman: boolean;
 };
 
 export type Patient = {
@@ -60,6 +91,11 @@ export type Patient = {
   documents: CapturedDocument[];
   reportedSigns?: string[];
   abhaId?: string;
+  bloodGroup?: string;
+  householdId?: string;
+  allergies?: AllergyRecord[];
+  vaultRecords?: HealthRecordItem[];
+  shareUntil?: string;
 };
 
 export type Asha = {

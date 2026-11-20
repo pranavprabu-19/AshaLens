@@ -9,6 +9,11 @@ export type StoredState = {
       documents?: import("./types").CapturedDocument[];
       vitals?: import("./types").Vital[];
       abhaId?: string;
+      allergies?: import("./types").AllergyRecord[];
+      bloodGroup?: string;
+      householdId?: string;
+      vaultRecords?: import("./types").HealthRecordItem[];
+      shareUntil?: string;
     }
   >;
 };
@@ -51,6 +56,11 @@ export function patchPatient(
     documents: patch.documents ?? prev.documents,
     vitals: patch.vitals ?? prev.vitals,
     abhaId: patch.abhaId !== undefined ? patch.abhaId : prev.abhaId,
+    allergies: patch.allergies ?? prev.allergies,
+    bloodGroup: patch.bloodGroup !== undefined ? patch.bloodGroup : prev.bloodGroup,
+    householdId: patch.householdId !== undefined ? patch.householdId : prev.householdId,
+    vaultRecords: patch.vaultRecords ?? prev.vaultRecords,
+    shareUntil: patch.shareUntil !== undefined ? patch.shareUntil : prev.shareUntil,
   };
   saveState(s);
 }

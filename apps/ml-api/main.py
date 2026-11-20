@@ -85,6 +85,11 @@ class ExplainBody(BaseModel):
     confirmed: bool = False
 
 
+class SpeakBody(BaseModel):
+    text: str
+    confirmed: bool = False
+
+
 class ImageB64(BaseModel):
     image_base64: str
 
@@ -273,6 +278,21 @@ def explain(body: ExplainBody):
         "audio_url": audio_url,
         "disclaimer": "Explanation after human confirm only. Never a diagnosis.",
     }
+
+
+@app.post("/speak")
+def speak(body: SpeakBody):
+    if not body.confirmed or not body.text.strip():
+        return {"audio_url": None, "error": "Only confirmed text is spoken."}
+    try:
+        from services.tts_sarvam import synthesize_tamil
+
+        path = synthesize_tamil(body.text.strip()[:500])
+        base = os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+        return {"audio_url": f"{base}/dialpad/audio/{path.name}"}
+    except Exception as exc:  # noqa: BLE001
+        print("speak:", type(exc).__name__)
+        return {"audio_url": None}
 
 
 @app.post("/extract")

@@ -24,9 +24,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!session) return null;
 
   const hideNav = path === "/app/consent";
+  const vault = path.split("/").includes("vault");
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg bg-cream pb-24 print:bg-white print:pb-0">
+    <div
+      className={
+        vault
+          ? "mx-auto h-dvh max-w-lg overflow-hidden bg-cream"
+          : "mx-auto min-h-dvh max-w-lg bg-cream pb-24 print:bg-white print:pb-0"
+      }
+    >
+      {vault ? null : (
       <header className="flex items-center justify-between border-b border-sand px-4 py-3 print:hidden">
         <div>
           <p className="font-display text-lg text-teal-dark">AshaLens</p>
@@ -45,8 +53,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           Sign out
         </button>
       </header>
-      <main className="px-4 py-4">{children}</main>
-      {hideNav ? null : <BottomNav />}
+      )}
+      <main className={vault ? "h-dvh" : "px-4 py-4"}>{children}</main>
+      {hideNav || vault ? null : <BottomNav />}
     </div>
   );
 }

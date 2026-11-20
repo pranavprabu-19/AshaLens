@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { DEMO_LOGIN, PATIENTS } from "./seed";
 import { loadState } from "./storage";
 import type { Patient, Role, Session } from "./types";
+import { VAULT_DEFAULTS } from "./vault";
 
 type Store = {
   session: Session | null;
@@ -20,13 +21,18 @@ function mergePatients(): Patient[] {
   const extra = loadState().extraByPatient;
   return PATIENTS.map((p) => {
     const e = extra[p.id];
-    if (!e) return p;
+    const seeded = VAULT_DEFAULTS[p.id];
     return {
       ...p,
-      medicines: e.medicines ?? p.medicines,
-      documents: e.documents ?? p.documents,
-      vitals: e.vitals ?? p.vitals,
-      abhaId: e.abhaId ?? p.abhaId,
+      medicines: e?.medicines ?? p.medicines,
+      documents: e?.documents ?? p.documents,
+      vitals: e?.vitals ?? p.vitals,
+      abhaId: e?.abhaId ?? p.abhaId,
+      allergies: e?.allergies ?? seeded?.allergies ?? p.allergies,
+      bloodGroup: e?.bloodGroup ?? seeded?.bloodGroup ?? p.bloodGroup,
+      householdId: e?.householdId ?? seeded?.householdId ?? p.householdId,
+      vaultRecords: e?.vaultRecords ?? seeded?.vaultRecords ?? p.vaultRecords,
+      shareUntil: e?.shareUntil || undefined,
     };
   });
 }

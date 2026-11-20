@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import type { CapturedDocument, DocumentType, Medicine, QualityEstimate } from "@/lib/types";
 import { useTour } from "@/lib/tour";
+import { checkAllergyConflict } from "@/lib/safety";
 
 const TYPES: { id: DocumentType; label: string }[] = [
   { id: "prescription", label: "Prescription" },
@@ -70,6 +71,11 @@ export default function CapturePage() {
 
   if (!patient) return <p>Patient not found.</p>;
   const current = patient;
+  const draftNames = [
+    ...items.filter((item, index) => picked[index] && item.drug).map((item) => item.drug),
+    name.trim(),
+  ].filter(Boolean);
+  const allergyHits = checkAllergyConflict(draftNames, current.allergies ?? []);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -330,6 +336,17 @@ export default function CapturePage() {
           Suggest fields from trained NER
         </Button>
       </Card>
+
+      {allergyHits.length ? (
+        <div className="rounded-3xl border border-alert bg-alert/10 p-4 text-alert" role="alert">
+          <p className="text-xs font-semibold uppercase">Allergy conflict</p>
+          {allergyHits.map((hit) => (
+            <p key={hit.id} className="mt-2 text-sm font-medium">
+              {hit.message} {hit.messageTa}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       <Card>
         <h2 className="font-display text-lg">Human confirm</h2>

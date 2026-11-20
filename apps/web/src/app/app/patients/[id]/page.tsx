@@ -57,6 +57,12 @@ export default function PatientPage() {
         Photograph a paper slip
       </Link>
       <Link
+        href={`/app/patients/${record.id}/vault`}
+        className="block rounded-2xl border border-teal py-3 text-center font-semibold text-teal-dark"
+      >
+        Health vault
+      </Link>
+      <Link
         href={`/app/patients/${record.id}/summary`}
         className="block rounded-2xl border border-teal py-3 text-center font-semibold text-teal-dark"
       >
