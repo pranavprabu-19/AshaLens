@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 
 from services.extract import extract_document
-from services.formulary import INTERACTIONS, canonical, interactions_for, parse_dose, review_item
+from services.extract import items_from_text
+from services.formulary import BRANDS, INTERACTIONS, canonical, interactions_for, parse_dose, review_item
 
 ROOT = Path(__file__).resolve().parents[3]
 FORMULARY = ROOT / "apps" / "web" / "src" / "lib" / "formulary.json"
@@ -22,6 +23,19 @@ def test_brand_map_covers_common_duplicates():
     assert canonical("Shelcal")[0] == "calcium"
     assert canonical("Stamlo")[0] == "amlodipine"
     assert canonical("Brufen")[0] == "ibuprofen"
+
+
+def test_brand_index_matches_exact_names_only():
+    assert canonical("Thyronorm")[0] == "levothyroxine"
+    assert canonical("Augmentin 625 Duo Tablet")[0] == "amoxicillin"
+    assert canonical("Abepride")[0] == "glimepiride"
+    assert canonical("Abeprid")[0] != "glimepiride"
+    assert "alupent" not in BRANDS
+    item = review_item("Abepride Plus", "Abepride Plus", "Abepride Plus")
+    assert item["generics"] == ["glimepiride", "metformin"]
+    found = items_from_text("Thyronorm 50 mcg OD")
+    assert found[0]["generic"] == "levothyroxine"
+    assert found[0]["confidence"] >= 0.65
 
 
 def test_dose_and_frequency_shorthand():

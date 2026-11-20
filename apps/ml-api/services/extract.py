@@ -231,7 +231,12 @@ def extract_document(
         source = "demo-cache"
     items = items_from_text(text)
     slip_pregnant, vital_alerts = checklist_from_slip(text)
-    confident = [item["generic"] for item in items if item["confidence"] >= 0.65]
+    confident = [
+        salt
+        for item in items
+        if item["confidence"] >= 0.65
+        for salt in (item.get("generics") or [item["generic"]])
+    ]
     alerts = interactions_for(confident, pregnant=pregnant or slip_pregnant) + vital_alerts
     return {
         "quality": labels.get("quality"),

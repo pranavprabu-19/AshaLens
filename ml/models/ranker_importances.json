@@ -1,18 +1,18 @@
 {
   "model": "hist_gradient_boosting",
   "importances": {
-    "days_overdue": 0.7151618815904653,
-    "pregnant": 0.029895907467001163,
-    "gestational_week": 0.03808625572878585,
-    "high_bp": 0.05365665817193937,
-    "duplicate_meds": 0.04255178224806237,
-    "interaction": 0.006385835063989178,
-    "anemia": 0.053259224834685474,
-    "danger_sign": 0.0191017705010908,
-    "age": 0.041900684393980515
+    "days_overdue": 0.6950560233755683,
+    "pregnant": 0.02805055005035427,
+    "gestational_week": 0.04476129825623034,
+    "high_bp": 0.06306047333049021,
+    "duplicate_meds": 0.04402376621492445,
+    "interaction": 0.006210397726440033,
+    "anemia": 0.05094903278801188,
+    "danger_sign": 0.022030110983796536,
+    "age": 0.045858347274183996
   },
   "comparison": {
-    "rule_days_gt_30": 0.51,
+    "rule_days_gt_30": 0.47,
     "random_forest": 1.0,
     "hist_gradient_boosting": 1.0
   }
