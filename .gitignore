@@ -13,6 +13,7 @@ ml/models/*.onnx
 ml/data/synthetic/images/
 .env
 .env.local
+apps/ml-api/.audio_cache/
 *.log
 .DS_Store
 Thumbs.db
