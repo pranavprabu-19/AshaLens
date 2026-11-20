@@ -57,7 +57,7 @@ eSanjeevani connects a patient or rural centre to a doctor over video. AshaLens 
 | `quality_gate.pkl` | Logistic Regression | Blur and dark photo detection |
 | `document_type.pkl` | Random Forest | Prescription, lab slip, or MCP card |
 | `ner_logreg.pkl` | Context logistic regression | Drug and dose tokens |
-| `followup_rf.pkl` | Random Forest | Visit priority |
+| `followup_rf.pkl` | Histogram gradient boosting (forest kept for reasons) | Visit priority |
 
 ### Experimental ONNX (not the live path yet)
 
@@ -125,7 +125,7 @@ On the held-out synthetic split, the quality gate reached 0.98 accuracy and docu
 
 ## Extract
 
-`POST /extract` accepts a photo, a typed line, or both. Gemini vision is used when `GEMINI_API_KEY` is set. Otherwise Sarvam Vision is tried. Typed lines and the three cached sample slips work with the network off. A field under 0.65 confidence is marked for review. Nothing is saved until a person checks it.
+`POST /extract` accepts a photo, a text-layer PDF, a typed line, or both. Gemini vision is used when `GEMINI_API_KEY` is set. Otherwise Sarvam Vision is tried. Typed lines and the three cached sample slips work with the network off. A field under 0.65 confidence is marked for review. Nothing is saved until a person checks it.
 
 ## Run
 
@@ -171,7 +171,7 @@ set -a && source .env && set +a
 - Quality gate (OpenCV features + logistic regression)
 - Document type (random forest; TinyMobileNet ONNX is experimental)
 - NER (context logistic regression; DistilBERT-tiny ONNX is experimental)
-- Follow-up ranker (random forest ONNX vs a days-overdue rule)
+- Follow-up ranker (histogram gradient boosting vs a random forest and a days-overdue rule; the forest supplies the “why” reasons)
 
 LLM and speech APIs explain or speak text **after** a person confirms the fields. They do not extract the clinical record.
 

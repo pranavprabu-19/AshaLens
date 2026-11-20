@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { estimateQuality } from "@/lib/imageQuality";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import type { CapturedDocument, DocumentType, Medicine, QualityEstimate } from "@/lib/types";
+import { useTour } from "@/lib/tour";
 
 const TYPES: { id: DocumentType; label: string }[] = [
   { id: "prescription", label: "Prescription" },
@@ -22,6 +23,7 @@ const TYPES: { id: DocumentType; label: string }[] = [
 export default function CapturePage() {
   const { id } = useParams<{ id: string }>();
   const { patients, refresh } = useStore();
+  const { step, markReady } = useTour();
   const router = useRouter();
   const patient = patients.find((p) => p.id === id);
 
@@ -44,6 +46,27 @@ export default function CapturePage() {
     "Ferrous sulphate 200 mg OD\nShelcal 500 mg OD",
     "Stamlo 5 mg OD\nBrufen 400 mg SOS",
   ];
+
+  useEffect(() => {
+    if (step?.id !== "capture" || id !== "p-lakshmi") return;
+    let cancel = false;
+    const sample = SAMPLES[1];
+    setOcrLine(sample);
+    void extractDocument(undefined, sample)
+      .then((result) => {
+        if (cancel) return;
+        applyExtracted(result.items);
+        setAlerts(result.alerts);
+        setDisclaimer(result.disclaimer);
+        setSource(result.source);
+      })
+      .finally(() => {
+        if (!cancel) markReady();
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [step?.id, id, markReady]);
 
   if (!patient) return <p>Patient not found.</p>;
   const current = patient;

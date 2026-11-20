@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { StoreProvider } from "@/lib/store";
+import { TourProvider } from "@/lib/tour";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import "./globals.css";
 
@@ -33,8 +34,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${dmSans.variable} ${fraunces.variable} font-sans antialiased`}>
         <StoreProvider>
-          <ServiceWorkerRegister />
-          {children}
+          <TourProvider>
+            <ServiceWorkerRegister />
+            {children}
+          </TourProvider>
         </StoreProvider>
       </body>
     </html>

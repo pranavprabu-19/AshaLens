@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTour } from "@/lib/tour";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"];
 
@@ -11,6 +12,7 @@ type Insight = {
 };
 
 export default function DialPadPage() {
+  const { step, markReady } = useTour();
   const [code, setCode] = useState("1001");
   const [pin, setPin] = useState("");
   const [token, setToken] = useState("");
@@ -59,6 +61,40 @@ export default function DialPadPage() {
     }
     speak(text);
   }
+
+  useEffect(() => {
+    if (step?.id !== "dialpad") return;
+    let cancel = false;
+    void (async () => {
+      setCode("1001");
+      setPin("1234");
+      try {
+        const res = await fetch("/ml/dialpad/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ patient_short_code: "1001", pin: "1234" }),
+        });
+        if (!res.ok || cancel) return;
+        const body = await res.json();
+        setToken(body.token);
+        setPatientId(body.patient_id);
+        setLang("ta");
+        const insight = await fetch(`/ml/dialpad/insights/${body.patient_id}?menu=1&lang=ta`, {
+          headers: { Authorization: `Bearer ${body.token}` },
+        });
+        if (!insight.ok || cancel) return;
+        const data = (await insight.json()) as Insight;
+        const text = data.spoken_text || "";
+        setLast(text);
+        setMessage(text);
+      } finally {
+        if (!cancel) markReady();
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [step?.id, markReady]);
 
   async function press(key: string) {
     if (!token) {

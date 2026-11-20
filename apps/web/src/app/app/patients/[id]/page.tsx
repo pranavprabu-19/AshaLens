@@ -21,9 +21,10 @@ export default function PatientPage() {
     return <p className="text-sm text-alert">Patient not on this roster.</p>;
   }
 
-  const alerts = evaluateSafety(patient);
-  const asha = ASHAS.find((a) => a.id === patient.ashaId);
-  const latest = patient.vitals[patient.vitals.length - 1];
+  const record = patient;
+  const alerts = evaluateSafety(record);
+  const asha = ASHAS.find((a) => a.id === record.ashaId);
+  const latest = record.vitals[record.vitals.length - 1];
 
   function onAbha(event: FormEvent) {
     event.preventDefault();
@@ -32,7 +33,7 @@ export default function PatientPage() {
       setAbhaNote("ABHA is 14 digits. Leave it blank if you do not have one.");
       return;
     }
-    patchPatient(patient.id, { abhaId: digits });
+    patchPatient(record.id, { abhaId: digits });
     refresh();
     setAbhaNote(digits ? "Saved on this phone. Not checked with ABDM." : "Cleared.");
   }
@@ -40,23 +41,23 @@ export default function PatientPage() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs uppercase tracking-wide text-ink/50">{patient.village}</p>
-        <h1 className="font-display text-3xl text-teal-dark">{patient.name}</h1>
+        <p className="text-xs uppercase tracking-wide text-ink/50">{record.village}</p>
+        <h1 className="font-display text-3xl text-teal-dark">{record.name}</h1>
         <p className="text-sm text-ink/60">
-          {patient.nameTa} · {patient.age} years · {patient.sex}
-          {patient.pregnant ? ` · pregnant ${patient.gestationalWeek}w` : ""}
+          {record.nameTa} · {record.age} years · {record.sex}
+          {record.pregnant ? ` · pregnant ${record.gestationalWeek}w` : ""}
         </p>
         <p className="text-xs text-ink/50">ASHA {asha?.name}</p>
       </div>
 
       <Link
-        href={`/app/patients/${patient.id}/capture`}
+        href={`/app/patients/${record.id}/capture`}
         className="block rounded-2xl bg-teal py-3 text-center font-semibold text-cream"
       >
         Photograph a paper slip
       </Link>
       <Link
-        href={`/app/patients/${patient.id}/summary`}
+        href={`/app/patients/${record.id}/summary`}
         className="block rounded-2xl border border-teal py-3 text-center font-semibold text-teal-dark"
       >
         Show for consult
@@ -65,7 +66,7 @@ export default function PatientPage() {
       <form onSubmit={onAbha} className="rounded-3xl bg-white p-4 shadow-card">
         <h2 className="font-display text-lg">ABHA</h2>
         <p className="mt-1 text-xs text-ink/55">Not checked with ABDM. Optional.</p>
-        <p className="mt-1 text-sm">{patient.abhaId ? patient.abhaId : "No number saved."}</p>
+        <p className="mt-1 text-sm">{record.abhaId ? record.abhaId : "No number saved."}</p>
         <input
           value={abha}
           onChange={(event) => setAbha(event.target.value)}
@@ -83,11 +84,11 @@ export default function PatientPage() {
 
       <section className="rounded-3xl bg-white p-4 shadow-card">
         <h2 className="font-display text-lg">Vitals timeline</h2>
-        {patient.vitals.length === 0 ? (
+        {record.vitals.length === 0 ? (
           <p className="mt-2 text-sm text-ink/60">No vitals yet.</p>
         ) : (
           <ul className="mt-2 space-y-2 text-sm">
-            {patient.vitals.map((v) => (
+            {record.vitals.map((v) => (
               <li key={v.date} className="flex justify-between border-b border-sand py-2 last:border-0">
                 <span className="text-ink/55">{v.date}</span>
                 <span>
@@ -102,13 +103,13 @@ export default function PatientPage() {
         {latest?.bpSystolic ? (
           <p className="mt-2 text-xs text-ink/55">Latest BP {latest.bpSystolic}/{latest.bpDiastolic}. Trend is for the visiting doctor, not a diagnosis.</p>
         ) : null}
-        <VitalForm patient={patient} onSaved={() => undefined} />
+        <VitalForm patient={record} onSaved={() => undefined} />
       </section>
 
       <section className="rounded-3xl bg-white p-4 shadow-card">
         <h2 className="font-display text-lg">Medicines</h2>
         <ul className="mt-2 space-y-3">
-          {patient.medicines.map((m) => {
+          {record.medicines.map((m) => {
             const explain = explainDrug(m.name);
             return (
               <li key={m.id} className="rounded-2xl bg-paper px-3 py-3">
@@ -132,11 +133,11 @@ export default function PatientPage() {
         </ul>
       </section>
 
-      {patient.documents.length > 0 ? (
+      {record.documents.length > 0 ? (
         <section className="rounded-3xl bg-white p-4 shadow-card">
           <h2 className="font-display text-lg">Captured papers</h2>
           <ul className="mt-2 space-y-2 text-sm">
-            {patient.documents.map((d) => (
+            {record.documents.map((d) => (
               <li key={d.id} className="flex justify-between">
                 <span>
                   {d.type.replace("_", " ")} · {d.quality}

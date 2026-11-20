@@ -15,7 +15,7 @@ export default function LandingPage() {
             Open live demo
           </Link>
           <Link href="/demo" className="rounded-2xl border border-sand bg-white px-5 py-3 font-semibold">
-            90-second walkthrough
+            Play the walkthrough
           </Link>
         </div>
         <ul className="mt-10 space-y-3 text-sm leading-relaxed">
