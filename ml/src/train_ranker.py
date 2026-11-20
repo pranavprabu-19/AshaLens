@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import joblib
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
@@ -47,13 +47,33 @@ def main() -> None:
         print("AUC skipped", exc)
 
     rule = (x_test["days_overdue"] > 30).map({True: "overdue_medium", False: "on_track"})
-    print("Dumb rule (days>30) accuracy", float((rule.values == y_test.values).mean()))
-    print("RF accuracy", float((pred == y_test).mean()))
-    print("feature importances", dict(zip(FEATURES, clf.feature_importances_)))
+    hgb = HistGradientBoostingClassifier(max_iter=120, random_state=0)
+    hgb.fit(x_train, y_train)
+    hgb_pred = hgb.predict(x_test)
+    rule_acc = float((rule.values == y_test.values).mean())
+    rf_acc = float((pred == y_test).mean())
+    hgb_acc = float((hgb_pred == y_test).mean())
+    print("Dumb rule (days>30) accuracy", rule_acc)
+    print("RF accuracy", rf_acc)
+    print("HGB accuracy", hgb_acc)
+    chosen = hgb if hgb_acc >= rf_acc else clf
+    chosen_name = "hist_gradient_boosting" if chosen is hgb else "random_forest"
+    importances = [float(v) for v in clf.feature_importances_]
+    print(chosen_name, "reasons use random-forest importances", dict(zip(FEATURES, importances)))
 
     models = repo_root() / "ml" / "models"
     models.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"model": clf, "features": FEATURES, "classes": list(clf.classes_)}, models / "followup_rf.pkl")
+    joblib.dump(
+        {
+            "model": chosen,
+            "features": FEATURES,
+            "classes": list(chosen.classes_),
+            "importances": importances,
+            "name": chosen_name,
+            "comparison": {"rule_days_gt_30": rule_acc, "random_forest": rf_acc, "hist_gradient_boosting": hgb_acc},
+        },
+        models / "followup_rf.pkl",
+    )
 
     try:
         from skl2onnx import convert_sklearn
@@ -66,7 +86,14 @@ def main() -> None:
         print("ONNX export skipped:", exc)
 
     (models / "ranker_importances.json").write_text(
-        json.dumps(dict(zip(FEATURES, [float(v) for v in clf.feature_importances_])), indent=2),
+        json.dumps(
+            {
+                "model": chosen_name,
+                "importances": dict(zip(FEATURES, importances)),
+                "comparison": {"rule_days_gt_30": rule_acc, "random_forest": rf_acc, "hist_gradient_boosting": hgb_acc},
+            },
+            indent=2,
+        ),
         encoding="utf-8",
     )
 

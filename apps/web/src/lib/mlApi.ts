@@ -39,7 +39,35 @@ export async function explainDrugApi(drug: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ drug, confirmed: true }),
   });
-  return parseJson<{ en: string; ta: string; source: string }>(res);
+  return parseJson<{ en: string; ta: string; source: string; audio_url?: string | null }>(res);
+}
+
+export type ExtractItem = {
+  drug: string;
+  generic: string;
+  dose: string;
+  frequency: string;
+  confidence: number;
+  needs_review: boolean;
+  source: string;
+};
+
+export type ExtractResult = {
+  quality?: string;
+  doc_type?: string;
+  raw_text: string;
+  source: string;
+  items: ExtractItem[];
+  alerts: { kind: string; en: string; ta: string }[];
+  disclaimer: string;
+};
+
+export async function extractDocument(file?: File, text?: string): Promise<ExtractResult> {
+  const body = new FormData();
+  if (file) body.append("file", file);
+  if (text) body.append("text", text);
+  const res = await fetch(`${ML_API}/extract`, { method: "POST", body });
+  return parseJson<ExtractResult>(res);
 }
 
 export async function rankRows(rows: Record<string, number>[]) {
@@ -48,5 +76,5 @@ export async function rankRows(rows: Record<string, number>[]) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rows }),
   });
-  return parseJson<{ labels: string[]; proba: number[][]; classes: string[] }>(res);
+  return parseJson<{ labels: string[]; proba: number[][]; classes: string[]; reasons?: string[][]; model?: string }>(res);
 }

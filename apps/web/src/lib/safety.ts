@@ -1,45 +1,25 @@
 import type { Alert, Medicine, Patient } from "./types";
+import formulary from "./formulary.json";
 
-const GENERIC: Record<string, string> = {
-  acetaminophen: "paracetamol",
-  tylenol: "paracetamol",
-  dolo: "paracetamol",
-  calpol: "paracetamol",
-  "ferrous sulphate": "ferrous",
-  "ferrous sulfate": "ferrous",
-  "iron tablet": "ferrous",
-  "calcium carbonate": "calcium",
-  "calcium tablet": "calcium",
-};
+const GENERIC: Record<string, string> = formulary.aliases;
+
+type Pair = { a: string; b: string; en: string; ta: string };
+
+const INTERACTIONS: { a: string; b: string; message: string; messageTa: string }[] = (
+  formulary.interactions as Pair[]
+).map((pair) => ({
+  a: pair.a,
+  b: pair.b,
+  message: pair.en,
+  messageTa: pair.ta,
+}));
+
+const PREGNANCY_AVOID = new Set(formulary.pregnancy_avoid);
 
 function norm(name: string) {
   const lower = name.trim().toLowerCase();
   return GENERIC[lower] ?? lower.split(" ")[0];
 }
-
-const INTERACTIONS: { a: string; b: string; message: string; messageTa: string }[] = [
-  {
-    a: "ferrous",
-    b: "calcium",
-    message:
-      "Iron and calcium taken together reduce iron absorption. Space them at least 2 hours apart.",
-    messageTa: "இரும்பும் கால்சியமும் ஒன்றாக எடுத்தால் இரும்பு சத்து குறையும். 2 மணி நேரம் இடைவெளி விடுங்கள்.",
-  },
-  {
-    a: "amlodipine",
-    b: "ibuprofen",
-    message:
-      "Ibuprofen can raise blood pressure and reduce the effect of amlodipine. Flag for the visiting doctor.",
-    messageTa: "இபுபுருஃபன் இரத்த அழுத்தத்தை உயர்த்தலாம். மருத்துவரிடம் காட்டுங்கள்.",
-  },
-  {
-    a: "metformin",
-    b: "ibuprofen",
-    message:
-      "Long-term NSAID use with diabetes needs a doctor review for kidney safety. This is not a diagnosis.",
-    messageTa: "நீரிழிவுடன் இபுபுருஃபன் நீண்ட நாள் பயன்படுத்தினால் சிறுநீரக பரிசோதனை தேவை.",
-  },
-];
 
 const DANGER_COPY: Record<string, { en: string; ta: string }> = {
   bleeding: {
@@ -147,6 +127,19 @@ export function evaluateSafety(patient: Patient): Alert[] {
         kind: "interaction",
         message: pair.message,
         messageTa: pair.messageTa,
+      });
+    }
+  }
+
+  if (patient.pregnant) {
+    for (const key of new Set(keys)) {
+      if (!PREGNANCY_AVOID.has(key)) continue;
+      alerts.push({
+        id: `preg-${patient.id}-${key}`,
+        severity: "high",
+        kind: "interaction",
+        message: `${key}: ${formulary.pregnancy_note.en}`,
+        messageTa: formulary.pregnancy_note.ta,
       });
     }
   }

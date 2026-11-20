@@ -11,12 +11,16 @@ export default function WeekPage() {
   const { patients, session } = useStore();
   const ranked = rankPatients(patients);
   const [modelLabels, setModelLabels] = useState<string[]>([]);
+  const [reasons, setReasons] = useState<string[][]>([]);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const order = rankPatients(patients);
     rankRows(order.map(patientFeatures))
-      .then((res) => setModelLabels(res.labels ?? []))
+      .then((res) => {
+        setModelLabels(res.labels ?? []);
+        setReasons(res.reasons ?? []);
+      })
       .catch(() => setModelLabels([]));
   }, [patients]);
 
@@ -56,9 +60,12 @@ export default function WeekPage() {
                     <p className="font-semibold">{p.name}</p>
                     <p className="text-xs text-ink/55">
                       {p.village} · rule {followUpScore(p)}
-                      {modelLabels[i] ? ` · RF ${modelLabels[i]}` : ""} ·{" "}
+                      {modelLabels[i] ? ` · model ${modelLabels[i]}` : ""} ·{" "}
                       {alerts.map((a) => a.kind.replace("_", " ")).join(", ") || "no flags"}
                     </p>
+                    {reasons[i]?.length ? (
+                      <p className="text-xs text-teal">Why: {reasons[i].join(", ")}</p>
+                    ) : null}
                   </div>
                 </div>
               </Link>

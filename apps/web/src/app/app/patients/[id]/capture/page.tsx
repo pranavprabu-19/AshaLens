@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { estimateQuality } from "@/lib/imageQuality";
 import { patchPatient, loadState } from "@/lib/storage";
 import { enqueueCapture } from "@/lib/offlineQueue";
-import { predictImageFile, predictNer } from "@/lib/mlApi";
+import { predictImageFile, predictNer, extractDocument, type ExtractItem } from "@/lib/mlApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -34,6 +34,14 @@ export default function CapturePage() {
   const [ocrLine, setOcrLine] = useState("");
   const [busy, setBusy] = useState(false);
   const [source, setSource] = useState("browser");
+  const [items, setItems] = useState<ExtractItem[]>([]);
+  const [picked, setPicked] = useState<boolean[]>([]);
+
+  const SAMPLES = [
+    "Tab Dolo 650 mg 1-0-1\nTab Glycomet 500 mg BD",
+    "Ferrous sulphate 200 mg OD\nShelcal 500 mg OD",
+    "Stamlo 5 mg OD\nBrufen 400 mg SOS",
+  ];
 
   if (!patient) return <p>Patient not found.</p>;
   const current = patient;
@@ -57,6 +65,9 @@ export default function CapturePage() {
       if (remote.doc_type && TYPES.some((t) => t.id === remote.doc_type)) {
         setDocType(remote.doc_type as DocumentType);
       }
+      const extracted = await extractDocument(file);
+      applyExtracted(extracted.items);
+      setSource(extracted.source);
     } catch {
       await enqueueCapture({
         id: `q-${Date.now()}`,
@@ -67,6 +78,16 @@ export default function CapturePage() {
       setSource("offline-queue");
     }
     setBusy(false);
+  }
+
+  function applyExtracted(found: ExtractItem[]) {
+    setItems(found);
+    setPicked(found.map((item) => !item.needs_review));
+    const first = found[0];
+    if (!first) return;
+    setName(first.drug);
+    setDose(first.dose === "unknown" ? "" : first.dose);
+    if (first.frequency) setFrequency(first.frequency);
   }
 
   async function onNer() {
@@ -104,7 +125,17 @@ export default function CapturePage() {
       },
     ];
     const medicines: Medicine[] = [...(extra.medicines ?? current.medicines)];
-    if (name.trim()) {
+    items.forEach((item, index) => {
+      if (!picked[index]) return;
+      medicines.push({
+        id: `med-${Date.now()}-${index}`,
+        name: item.drug,
+        dose: item.dose,
+        frequency: item.frequency || frequency,
+        confirmed: true,
+      });
+    });
+    if (!items.length && name.trim()) {
       medicines.push({
         id: `med-${Date.now()}`,
         name: name.trim(),
@@ -138,6 +169,54 @@ export default function CapturePage() {
           onChange={(e) => onFile(e.target.files?.[0])}
         />
       </label>
+
+      <div className="grid grid-cols-3 gap-2">
+        {SAMPLES.map((sample, index) => (
+          <button
+            key={sample}
+            type="button"
+            className="rounded-2xl border border-sand bg-white px-2 py-2 text-xs"
+            onClick={() => {
+              setOcrLine(sample);
+              void extractDocument(undefined, sample).then((result) => {
+                applyExtracted(result.items);
+                setSource(result.source);
+              });
+            }}
+          >
+            Sample {index + 1}
+          </button>
+        ))}
+      </div>
+
+      {items.length ? (
+        <Card>
+          <h2 className="font-display text-lg">Extracted lines</h2>
+          <ul className="mt-2 space-y-2">
+            {items.map((item, index) => (
+              <li
+                key={`${item.drug}-${index}`}
+                className={`rounded-2xl border px-3 py-2 text-sm ${item.needs_review ? "border-warn bg-warn/10" : "border-sand bg-white"}`}
+              >
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={picked[index] ?? false}
+                    onChange={() =>
+                      setPicked((currentPicked) => currentPicked.map((value, i) => (i === index ? !value : value)))
+                    }
+                  />
+                  <span>
+                    {item.drug} · {item.generic} · {item.dose} · {item.frequency || "timing unknown"}
+                    <span className="ml-2 text-xs">{Math.round(item.confidence * 100)}%</span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element

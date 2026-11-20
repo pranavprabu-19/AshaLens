@@ -69,11 +69,14 @@ Demo clinic: **Malligai PHC** (40 synthetic patients).
 - [x] Document capture (camera and file upload)
 - [x] In-browser quality gate (brightness and Laplacian sharpness)
 - [x] Server inference through the `/ml` proxy
-- [x] Drug interaction alerts (iron with calcium, amlodipine with ibuprofen, metformin with ibuprofen)
-- [x] Duplicate medicine detection
+- [x] Drug interaction alerts (15 primary-care pairs, including iron with calcium or antacid, warfarin with an NSAID, and a sulfonylurea with a beta-blocker)
+- [x] Duplicate medicine detection, including Dolo, Crocin, and Calpol as paracetamol
+- [x] Pregnancy caution list (ibuprofen, warfarin, doxycycline, enalapril, losartan, atorvastatin)
 - [x] NHM pregnancy danger-sign checklist
-- [x] English and Tamil medicine explanations from local templates
-- [x] Patient priority ranking
+- [x] English and Tamil explanations from Sarvam after confirmation, with local templates if the call fails
+- [x] Follow-up ranking with gradient boosting and the top reasons on the week page
+- [x] Photo or typed-line extraction at `POST /extract`, with a confidence badge and a human confirm step
+- [x] In-app patient dial pad at `/app/dialpad`
 - [x] Offline capture queue
 - [x] Synthetic Malligai PHC roster (40 patients)
 - [x] Installable PWA
@@ -82,10 +85,7 @@ Demo clinic: **Malligai PHC** (40 synthetic patients).
 
 ### Roadmap
 
-- [ ] In-app visual dial pad in the Next.js PWA
 - [ ] Dexie.js IndexedDB instead of the current browser store
-- [ ] PaddleOCR or Tesseract, with Sarvam Vision only when local confidence is below 0.65
-- [ ] Jan Aushadhi / NLEM brand-to-generic list and a wider interaction matrix
 - [ ] MCP card and lab-slip structured parsers
 - [ ] TinyMobileNet and DistilBERT-tiny as the live ONNX models
 - [ ] Tamil–English code-mixed NER training set
@@ -115,6 +115,12 @@ Two modes share one clinical engine in `apps/ml-api/services/dialpad_core.py`:
 | 0 | Tamil or English |
 
 The dial pad reads **human-confirmed** medicines only. Every spoken warning ends with an instruction to confirm with the PHC doctor or ASHA worker. A 4-digit PIN is required before pregnancy or MCP details are spoken. Synthetic demo PIN: `1234`. Short codes: Lakshmi `1001`, Murugan `1002`.
+
+On the held-out synthetic split, the quality gate reached 0.98 accuracy and document type reached 1.00. The follow-up ranker (histogram gradient boosting) reached 1.00 accuracy against a days-over-30 rule at 0.51. Those scores are on synthetic paper, not handwriting.
+
+## Extract
+
+`POST /extract` accepts a photo, a typed line, or both. Gemini vision is used when `GEMINI_API_KEY` is set. Otherwise Sarvam Vision is tried. Typed lines and the three cached sample slips work with the network off. A field under 0.65 confidence is marked for review. Nothing is saved until a person checks it.
 
 ## Run
 

@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import csv
 import random
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 from features import degrade, repo_root
@@ -92,6 +93,24 @@ def draw_mcp(i: int) -> Image.Image:
     return img
 
 
+def stress(image: Image.Image, rng: random.Random) -> Image.Image:
+    """Glare, tilt, shadow, and a crease. Labels stay ok/blur/dark."""
+    tilted = image.rotate(rng.uniform(-7, 7), resample=Image.Resampling.BICUBIC, fillcolor="#efe8dc")
+    arr = np.asarray(tilted.convert("RGB"), dtype=np.float32)
+    height, width, _ = arr.shape
+    if rng.random() < 0.7:
+        y0 = rng.randint(0, max(1, height - 50))
+        band = arr[y0 : y0 + 36]
+        arr[y0 : y0 + 36] = np.clip(band * 1.55 + 50, 0, 255)
+    if rng.random() < 0.6:
+        shade = np.linspace(0.55, 1.0, width, dtype=np.float32)
+        arr *= shade[None, :, None]
+    if rng.random() < 0.6:
+        y = rng.randint(12, height - 12)
+        arr[y : y + 2] *= 0.35
+    return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+
+
 DRAW = {
     "prescription": draw_prescription,
     "lab_slip": draw_lab,
@@ -109,6 +128,7 @@ def main() -> None:
                 n += 1
                 image = DRAW[doc_type](i)
                 image = degrade(image, quality)
+                image = stress(image, random.Random(n))
                 name = f"{doc_type}_{quality}_{i:03d}.jpg"
                 image.save(IMG / name, quality=86)
                 rows.append(

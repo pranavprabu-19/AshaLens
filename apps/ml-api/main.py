@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import base64
 import io
+import json
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 from pydantic import BaseModel
@@ -176,10 +178,30 @@ def predict_rank(body: RankBody):
     x = np.array([[getattr(row, f) for f in feats] for row in body.rows], dtype=float)
     labels = clf.predict(x)
     proba = clf.predict_proba(x)
+    importances = ranker_bundle.get("importances") or []
+    reasons = []
+    for row in body.rows:
+        scored = []
+        for feature, weight in zip(feats, importances):
+            value = float(getattr(row, feature))
+            concerning = value > 0
+            if feature == "days_overdue":
+                concerning = value > 14
+            elif feature == "gestational_week":
+                concerning = value >= 28
+            elif feature == "age":
+                concerning = value >= 35
+            if not concerning:
+                continue
+            scored.append((float(weight), feature.replace("_", " ")))
+        scored.sort(reverse=True)
+        reasons.append([name for _, name in scored[:3]])
     return {
         "labels": [str(v) for v in labels],
         "proba": proba.tolist(),
         "classes": [str(c) for c in clf.classes_],
+        "reasons": reasons,
+        "model": ranker_bundle.get("name", "random_forest"),
         "disclaimer": "Priority score, not a diagnosis.",
     }
 
@@ -187,7 +209,7 @@ def predict_rank(body: RankBody):
 @app.post("/explain")
 def explain(body: ExplainBody):
     if not body.confirmed:
-        return {"error": "Refuse to explain unconfirmed extraction.", "en": "", "ta": ""}
+        return {"error": "Refuse to explain unconfirmed extraction.", "en": "", "ta": "", "audio_url": None}
     key = body.drug.strip().lower().split()[0]
     en, ta = TEMPLATES.get(
         key,
@@ -196,10 +218,70 @@ def explain(body: ExplainBody):
             f"{body.drug}: இது எதற்கு என்று மருத்துவரிடம் கேளுங்கள்.",
         ),
     )
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GROQ_API_KEY")
+    source = "template"
+    api_key = os.environ.get("SARVAM_API_KEY", "").strip()
+    if api_key:
+        try:
+            from sarvamai import SarvamAI
+
+            client = SarvamAI(api_subscription_key=api_key)
+            reply = client.chat.completions(
+                model="sarvam-105b-conversations",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You explain a confirmed medicine in simple English and Tamil. "
+                            "Never diagnose. Never change the dose. Never add a new medicine. "
+                            "Reply exactly as two lines: EN: ... then TA: ..."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": json.dumps(
+                            {
+                                "drug": body.drug,
+                                "english_template": en,
+                                "tamil_template": ta,
+                            }
+                        ),
+                    },
+                ],
+            )
+            text = reply.choices[0].message.content or ""
+            en_line = next((line[3:].strip() for line in text.splitlines() if line.upper().startswith("EN:")), "")
+            ta_line = next((line[3:].strip() for line in text.splitlines() if line.upper().startswith("TA:")), "")
+            if en_line and ta_line:
+                en, ta = en_line, ta_line
+                source = "sarvam-105b-conversations"
+        except Exception as exc:  # noqa: BLE001
+            print("explain llm:", type(exc).__name__)
+    audio_url = None
+    try:
+        from services.tts_sarvam import synthesize
+
+        path = synthesize(ta, "ta", codec="mp3", sample_rate=22050)
+        base = os.environ.get("PUBLIC_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+        audio_url = f"{base}/dialpad/audio/{path.name}"
+    except Exception as exc:  # noqa: BLE001
+        print("explain audio:", type(exc).__name__)
     return {
         "en": en,
         "ta": ta,
-        "source": "template" if not api_key else "template (LLM key present but unused unless you wire it)",
+        "source": source,
+        "audio_url": audio_url,
         "disclaimer": "Explanation after human confirm only. Never a diagnosis.",
     }
+
+
+@app.post("/extract")
+async def extract_endpoint(
+    file: Optional[UploadFile] = File(default=None),
+    text: str = Form(default=""),
+    pregnant: bool = Form(default=False),
+):
+    from services.extract import extract_document
+
+    raw = await file.read() if file is not None else None
+    mime = file.content_type if file is not None and file.content_type else "image/jpeg"
+    return extract_document(raw, text, mime, pregnant)
