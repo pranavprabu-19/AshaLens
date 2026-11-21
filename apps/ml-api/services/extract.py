@@ -66,7 +66,7 @@ def _gemini(image_bytes: bytes, mime: str) -> str:
             }
         ]
     }
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent"
     response = httpx.post(url, json=payload, headers={"X-goog-api-key": key}, timeout=20.0)
     response.raise_for_status()
     body = response.json()
