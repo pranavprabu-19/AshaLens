@@ -66,6 +66,21 @@ def test_fifteen_interactions_and_pregnancy_block():
     )
 
 
+def test_extract_returns_confirmed_lab_and_mcp_numbers():
+    lab = extract_document(None, "Hb 8.8\nBP 150/96\nWeight 54 kg")
+    by_field = {row["field"]: row for row in lab["vitals"]}
+    assert by_field["hb"]["hemoglobin"] == 8.8
+    assert by_field["bp"]["bpSystolic"] == 150
+    assert by_field["bp"]["bpDiastolic"] == 96
+    assert by_field["weight"]["weightKg"] == 54
+    assert by_field["hb"]["doc_type"] == "lab_slip"
+    assert all(row["confidence"] >= 0.65 for row in lab["vitals"])
+    mcp = extract_document(None, "MCP card\nBP 120/80")
+    assert mcp["vitals"][0]["doc_type"] == "mcp_card"
+    weak = extract_document(None, "BP 40/200")
+    assert weak["vitals"][0]["confidence"] < 0.65
+
+
 def test_three_demo_slips_work_without_cloud():
     expect = [
         {"paracetamol", "metformin"},

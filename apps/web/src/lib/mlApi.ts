@@ -61,12 +61,24 @@ export type ExtractItem = {
   source: string;
 };
 
+export type ExtractVital = {
+  field: "bp" | "hb" | "weight";
+  label: string;
+  bpSystolic?: number;
+  bpDiastolic?: number;
+  hemoglobin?: number;
+  weightKg?: number;
+  confidence: number;
+  doc_type: "lab_slip" | "mcp_card";
+};
+
 export type ExtractResult = {
   quality?: string;
   doc_type?: string;
   raw_text: string;
   source: string;
   items: ExtractItem[];
+  vitals?: ExtractVital[];
   alerts: { kind: string; en: string; ta: string }[];
   disclaimer: string;
 };

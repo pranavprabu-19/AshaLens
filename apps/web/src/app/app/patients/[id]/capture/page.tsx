@@ -6,11 +6,11 @@ import { useStore } from "@/lib/store";
 import { estimateQuality } from "@/lib/imageQuality";
 import { patchPatient, loadState } from "@/lib/storage";
 import { enqueueCapture } from "@/lib/offlineQueue";
-import { predictImageFile, predictNer, extractDocument, type ExtractItem } from "@/lib/mlApi";
+import { predictImageFile, predictNer, extractDocument, type ExtractItem, type ExtractVital } from "@/lib/mlApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import type { CapturedDocument, DocumentType, Medicine, QualityEstimate } from "@/lib/types";
+import type { CapturedDocument, DocumentType, HealthRecordItem, Medicine, QualityEstimate, Vital } from "@/lib/types";
 import { useTour } from "@/lib/tour";
 import { checkAllergyConflict } from "@/lib/safety";
 
@@ -39,6 +39,8 @@ export default function CapturePage() {
   const [source, setSource] = useState("browser");
   const [items, setItems] = useState<ExtractItem[]>([]);
   const [picked, setPicked] = useState<boolean[]>([]);
+  const [vitalRows, setVitalRows] = useState<ExtractVital[]>([]);
+  const [vitalPicked, setVitalPicked] = useState<boolean[]>([]);
   const [alerts, setAlerts] = useState<{ kind: string; en: string; ta: string }[]>([]);
   const [disclaimer, setDisclaimer] = useState("");
 
@@ -56,10 +58,7 @@ export default function CapturePage() {
     void extractDocument(undefined, sample)
       .then((result) => {
         if (cancel) return;
-        applyExtracted(result.items);
-        setAlerts(result.alerts);
-        setDisclaimer(result.disclaimer);
-        setSource(result.source);
+        applySlip(result);
       })
       .finally(() => {
         if (!cancel) markReady();
@@ -86,10 +85,7 @@ export default function CapturePage() {
       setQuality(null);
       try {
         const extracted = await extractDocument(file);
-        applyExtracted(extracted.items);
-        setAlerts(extracted.alerts);
-        setDisclaimer(extracted.disclaimer);
-        setSource(extracted.source || "none");
+        applySlip(extracted);
       } catch {
         setSource("offline-queue");
       }
@@ -114,10 +110,7 @@ export default function CapturePage() {
         setDocType(remote.doc_type as DocumentType);
       }
       const extracted = await extractDocument(file);
-      applyExtracted(extracted.items);
-      setAlerts(extracted.alerts);
-      setDisclaimer(extracted.disclaimer);
-      setSource(extracted.source);
+      applySlip(extracted);
     } catch {
       await enqueueCapture({
         id: `q-${Date.now()}`,
@@ -138,6 +131,35 @@ export default function CapturePage() {
     setName(first.drug);
     setDose(first.dose === "unknown" ? "" : first.dose);
     if (first.frequency) setFrequency(first.frequency);
+  }
+
+  function applySlip(result: {
+    items: ExtractItem[];
+    vitals?: ExtractVital[];
+    alerts: { kind: string; en: string; ta: string }[];
+    disclaimer: string;
+    source: string;
+  }) {
+    applyExtracted(result.items);
+    const vitals = result.vitals ?? [];
+    setVitalRows(vitals);
+    setVitalPicked(vitals.map((row) => row.confidence >= 0.65));
+    const typed = vitals.find((row) => row.doc_type === "lab_slip" || row.doc_type === "mcp_card");
+    if (typed) setDocType(typed.doc_type);
+    setAlerts(result.alerts);
+    setDisclaimer(result.disclaimer);
+    setSource(result.source || "none");
+  }
+
+  async function onReadSlip() {
+    if (!ocrLine.trim()) return;
+    setBusy(true);
+    try {
+      applySlip(await extractDocument(undefined, ocrLine));
+    } catch {
+      setSource("offline-queue");
+    }
+    setBusy(false);
   }
 
   async function onNer() {
@@ -194,7 +216,48 @@ export default function CapturePage() {
         confirmed: true,
       });
     }
-    patchPatient(current.id, { documents, medicines });
+    const kept = vitalRows.filter((row, index) => vitalPicked[index] && row.confidence >= 0.65);
+    const next: { documents: CapturedDocument[]; medicines: Medicine[]; vitals?: Vital[]; vaultRecords?: HealthRecordItem[] } = {
+      documents,
+      medicines,
+    };
+    if (kept.length) {
+      const vital: Vital = { date: new Date().toISOString().slice(0, 10) };
+      kept.forEach((row) => {
+        if (row.field === "bp") {
+          vital.bpSystolic = row.bpSystolic;
+          vital.bpDiastolic = row.bpDiastolic;
+        }
+        if (row.field === "hb") vital.hemoglobin = row.hemoglobin;
+        if (row.field === "weight") vital.weightKg = row.weightKg;
+      });
+      const parts = [
+        vital.hemoglobin != null ? `Hb ${vital.hemoglobin}` : "",
+        vital.bpSystolic != null ? `BP ${vital.bpSystolic}/${vital.bpDiastolic}` : "",
+        vital.weightKg != null ? `Weight ${vital.weightKg} kg` : "",
+      ].filter(Boolean);
+      documents[documents.length - 1].note = parts.join(", ");
+      const record: HealthRecordItem = {
+        id: `rec-${Date.now()}`,
+        date: vital.date,
+        docType: kept[0].doc_type,
+        facility: "This phone",
+        confirmedEntities: {
+          vitals: {
+            hb: vital.hemoglobin,
+            bpSystolic: vital.bpSystolic,
+            bpDiastolic: vital.bpDiastolic,
+            weightKg: vital.weightKg,
+          },
+        },
+        safetyFlags: [],
+        tamilSummary: `உறுதி செய்யப்பட்ட அளவுகள்: ${parts.join(", ")}. இது நோயறிதல் அல்ல.`,
+        verifiedByHuman: true,
+      };
+      next.vitals = [...(extra.vitals ?? current.vitals), vital];
+      next.vaultRecords = [...(extra.vaultRecords ?? current.vaultRecords ?? []), record];
+    }
+    patchPatient(current.id, next);
     refresh();
     router.push(`/app/patients/${current.id}`);
   }
@@ -229,10 +292,7 @@ export default function CapturePage() {
             onClick={() => {
               setOcrLine(sample);
               void extractDocument(undefined, sample).then((result) => {
-                applyExtracted(result.items);
-                setAlerts(result.alerts);
-                setDisclaimer(result.disclaimer);
-                setSource(result.source);
+                applySlip(result);
               });
             }}
           >
@@ -290,6 +350,36 @@ export default function CapturePage() {
         </Card>
       ) : null}
 
+      {vitalRows.length ? (
+        <Card>
+          <h2 className="font-display text-lg">Lab and MCP numbers</h2>
+          <p className="mt-1 text-xs text-ink/60">
+            Uncheck anything you do not want on the chart. A weak reading stays off the chart. These are checklist numbers, not a diagnosis.
+          </p>
+          <ul className="mt-2 space-y-2">
+            {vitalRows.map((row, index) => (
+              <li key={`${row.field}-${row.label}`} className="rounded-2xl border border-sand bg-white px-3 py-2 text-sm">
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={vitalPicked[index] ?? false}
+                    onChange={() =>
+                      setVitalPicked((currentPicked) => currentPicked.map((value, i) => (i === index ? !value : value)))
+                    }
+                  />
+                  <span>
+                    {row.label}
+                    <span className="ml-2 text-xs">{Math.round(row.confidence * 100)}%</span>
+                    {row.confidence < 0.65 ? <span className="ml-2 text-xs text-alert">Needs a clearer reading</span> : null}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
       {preview ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={preview} alt="Captured paper" className="max-h-56 w-full rounded-3xl object-cover" />
@@ -332,6 +422,9 @@ export default function CapturePage() {
         <h2 className="font-display text-lg">OCR line then NER</h2>
         <p className="mb-2 text-xs text-ink/55">Type what you can read (Tesseract optional later). Then run NER.</p>
         <Input value={ocrLine} onChange={(e) => setOcrLine(e.target.value)} placeholder="Tab Metformin 500 mg BD" />
+        <Button type="button" variant="outline" className="mt-2 w-full py-2" onClick={onReadSlip}>
+          Read medicines and vitals
+        </Button>
         <Button type="button" variant="outline" className="mt-2 w-full py-2" onClick={onNer}>
           Suggest fields from trained NER
         </Button>

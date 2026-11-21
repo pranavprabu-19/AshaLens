@@ -129,7 +129,7 @@ def read_paper(image_bytes: bytes, mime: str) -> Tuple[str, str]:
 
 
 def _vital_only(chunk: str) -> bool:
-    if not re.search(r"\b(bp|hb|fbs|ppbs|platelets|ns1)\b", chunk, re.I):
+    if not re.search(r"\b(bp|hb|fbs|ppbs|platelets|ns1|weight|wt)\b", chunk, re.I):
         return False
     lowered = chunk.lower()
     return not any(len(key) >= 5 and key in lowered for key in ALIASES)
@@ -175,6 +175,52 @@ def checklist_from_slip(text: str) -> tuple[bool, list[dict]]:
             }
         )
     return pregnant, alerts
+
+
+def vitals_from_text(text: str) -> list[dict]:
+    """Structured lab or MCP numbers. A weak match stays under 0.65 so it is not saved."""
+    doc_type = "mcp_card" if re.search(r"\bmcp\b|\banc\b", text, re.I) else "lab_slip"
+    rows: list[dict] = []
+    bp = re.search(r"\bBP:?\s*(\d{2,3})\s*/\s*(\d{2,3})", text, re.I)
+    if bp:
+        systolic = int(bp.group(1))
+        diastolic = int(bp.group(2))
+        plausible = 70 <= systolic <= 250 and 40 <= diastolic <= 150 and systolic > diastolic
+        rows.append(
+            {
+                "field": "bp",
+                "label": f"BP {systolic}/{diastolic}",
+                "bpSystolic": systolic,
+                "bpDiastolic": diastolic,
+                "confidence": 0.92 if plausible else 0.4,
+                "doc_type": doc_type,
+            }
+        )
+    hb = re.search(r"\bHb:?\s*(\d+(?:\.\d+)?)", text, re.I)
+    if hb:
+        value = float(hb.group(1))
+        rows.append(
+            {
+                "field": "hb",
+                "label": f"Hb {value:g} g/dL",
+                "hemoglobin": value,
+                "confidence": 0.92 if 3 <= value <= 20 else 0.4,
+                "doc_type": doc_type,
+            }
+        )
+    weight = re.search(r"\b(?:weight|wt)\s*:?\s*(\d+(?:\.\d+)?)\s*(?:kg)?\b", text, re.I)
+    if weight:
+        kilos = float(weight.group(1))
+        rows.append(
+            {
+                "field": "weight",
+                "label": f"Weight {kilos:g} kg",
+                "weightKg": kilos,
+                "confidence": 0.92 if 2 <= kilos <= 180 else 0.4,
+                "doc_type": doc_type,
+            }
+        )
+    return rows
 
 
 def items_from_text(text: str) -> list[dict]:
@@ -244,6 +290,7 @@ def extract_document(
         "raw_text": text,
         "source": source,
         "items": items,
+        "vitals": vitals_from_text(text),
         "alerts": alerts,
         "disclaimer": "Suggestions only. A person must confirm every field. Not a diagnosis.",
     }
